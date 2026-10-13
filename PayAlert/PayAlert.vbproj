@@ -9,6 +9,7 @@
     <StartupObject>PayAlert.Program</StartupObject>
     <MyType>WindowsFormsWithCustomSubMain</MyType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources/PayAlert.ico</ApplicationIcon>
     <OptionStrict>On</OptionStrict>
     <OptionExplicit>On</OptionExplicit>
     <OptionInfer>On</OptionInfer>

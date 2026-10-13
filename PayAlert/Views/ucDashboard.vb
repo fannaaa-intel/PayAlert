@@ -119,9 +119,9 @@ Namespace Views
             ringHost.Controls.Add(_ringCaption)
             AddHandler ringHost.Layout,
                 Sub(s, e)
-                    ' The ring takes what height is left (up to 170px) and stays centered.
+                    ' The ring takes what height is left (up to 230px) and stays centered.
                     Dim side = Math.Max(CInt(110 * DeviceDpi / 96.0F), Math.Min(Math.Min(ringHost.ClientSize.Width, ringHost.ClientSize.Height - CInt(32 * DeviceDpi / 96.0F)),
-                                                                                   CInt(170 * DeviceDpi / 96.0F)))
+                                                                                   CInt(230 * DeviceDpi / 96.0F)))
                     Dim captionHeight = CInt(24 * DeviceDpi / 96.0F)
                     Dim top = Math.Max(0, (ringHost.ClientSize.Height - side - captionHeight) \ 2)
                     _ring.Size = New Size(side, side)
@@ -253,6 +253,13 @@ Namespace Views
         ''' <summary>One total in the totals card: a direction arrow on a soft disc, the label with a count, and the amount.</summary>
         Private NotInheritable Class TotalLine
             Inherits PAControl
+
+            Public Sub New()
+                MyBase.New()
+                ' Display only: never a Tab stop.
+                SetStyle(ControlStyles.Selectable, False)
+                TabStop = False
+            End Sub
 
             Private _amount As Decimal
             Private _caption As String = ""

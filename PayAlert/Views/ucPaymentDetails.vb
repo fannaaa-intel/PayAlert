@@ -62,8 +62,9 @@ Namespace Views
             Dim layout As New TableLayoutPanel() With {.Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 2, .BackColor = Theme.AppBackground}
             layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 38))
             layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 62))
-            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 62))
-            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 38))
+            ' The top row is as tall as its content needs (also on a short 150% screen); history gets the rest.
+            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 316))
+            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
             layout.Controls.Add(BuildBalanceCard(), 0, 0)
             layout.Controls.Add(BuildInfoCard(), 1, 0)
             Dim history = BuildHistoryCard()
@@ -75,10 +76,10 @@ Namespace Views
         ' ---------------------------------------------------------------- layout
 
         Private Function BuildBalanceCard() As SoftCard
-            Dim card As New SoftCard() With {.Dock = DockStyle.Fill, .Margin = New Padding(0, 0, 16, 16)}
-            _ring.Size = New Size(176, 176)
+            Dim card As New SoftCard() With {.Dock = DockStyle.Fill, .Margin = New Padding(0, 0, 16, 16), .Padding = New Padding(16, 12, 16, 10)}
+            _ring.Size = New Size(164, 164)
             _ring.Anchor = AnchorStyles.Top
-            Dim ringHost As New Panel() With {.Dock = DockStyle.Top, .Height = 184, .BackColor = Color.Transparent}
+            Dim ringHost As New Panel() With {.Dock = DockStyle.Top, .Height = 172, .BackColor = Color.Transparent}
             ringHost.Controls.Add(_ring)
             AddHandler ringHost.Layout, Sub(s, e) _ring.Left = (ringHost.ClientSize.Width - _ring.Width) \ 2
 

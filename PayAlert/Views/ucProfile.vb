@@ -190,6 +190,13 @@ Namespace Views
         Private NotInheritable Class ProfileIdentity
             Inherits PAControl
 
+            Public Sub New()
+                MyBase.New()
+                ' Display only: never a Tab stop.
+                SetStyle(ControlStyles.Selectable, False)
+                TabStop = False
+            End Sub
+
             Private _name As String = ""
             Private _email As String = ""
             Private _isAdmin As Boolean

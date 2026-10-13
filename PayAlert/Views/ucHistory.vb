@@ -245,6 +245,13 @@ Namespace Views
         Private NotInheritable Class HistoryTotals
             Inherits PAControl
 
+            Public Sub New()
+                MyBase.New()
+                ' Display only: never a Tab stop.
+                SetStyle(ControlStyles.Selectable, False)
+                TabStop = False
+            End Sub
+
             Private _paid As Decimal
             Private _paidCount As Integer
             Private _collected As Decimal

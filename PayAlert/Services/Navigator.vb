@@ -104,6 +104,7 @@ Namespace Services
                 If other IsNot view Then other.Visible = False
             Next
             _host.ResumeLayout(True)
+            view.ApplyVisualTabOrder()
             view.OnNavigatedTo()
             RaiseEvent Navigated(Me, EventArgs.Empty)
         End Sub

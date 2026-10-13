@@ -3,6 +3,7 @@ Option Explicit On
 
 Imports System.ComponentModel
 Imports System.Drawing
+Imports System.Linq
 Imports System.Windows.Forms
 Imports PayAlert.Controls
 Imports PayAlert.Services
@@ -132,6 +133,26 @@ Namespace Views
 
         ''' <summary>Called each time the Navigator shows this screen (first time and when coming back to it).</summary>
         Public Overridable Sub OnNavigatedTo()
+        End Sub
+
+        ''' <summary>
+        ''' Makes Tab follow what the user sees: top to bottom, then left to right, inside every container.
+        ''' Screens are built with docking, which adds controls in reverse order, so the default order runs backwards.
+        ''' The Navigator calls this after laying the screen out.
+        ''' </summary>
+        Public Sub ApplyVisualTabOrder()
+            ApplyVisualTabOrder(Me)
+        End Sub
+
+        Private Shared Sub ApplyVisualTabOrder(container As Control)
+            ' Controls whose tops are within a few pixels count as one row.
+            Dim rowTolerance = Math.Max(4, CInt(6 * container.DeviceDpi / 96.0F))
+            Dim ordered = container.Controls.Cast(Of Control)().
+                OrderBy(Function(c) c.Top \ rowTolerance).ThenBy(Function(c) c.Left).ToList()
+            For i = 0 To ordered.Count - 1
+                ordered(i).TabIndex = i
+                If ordered(i).HasChildren Then ApplyVisualTabOrder(ordered(i))
+            Next
         End Sub
 
         ''' <summary>A full-size soft card holding an empty state; used by screens until their phase is built.</summary>

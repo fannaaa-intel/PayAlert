@@ -27,6 +27,9 @@ Namespace Controls
         Public Sub New()
             MyBase.New()
             SetStyle(ControlStyles.StandardClick, True)
+            ' Only rows that open something take focus (see Opens).
+            SetStyle(ControlStyles.Selectable, False)
+            TabStop = False
             BackColor = Color.Transparent
             Size = New Size(420, 64)
         End Sub

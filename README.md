@@ -7,7 +7,7 @@ This is an academic prototype. It uses demo data and does not process real money
 - **Stack:** VB.NET, Windows Forms, .NET Framework 4.8
 - **Database:** MySQL / MariaDB on XAMPP (`localhost:3306`, database `payalert_db`)
 - **Build plan:** see [PLAN.md](PLAN.md)
-- **Progress:** [docs/WORK_ORDER.md](docs/WORK_ORDER.md) (status and test checklists) and [docs/HANDOFF.md](docs/HANDOFF.md) (notes for the next work session)
+- **Progress:** [docs/WORK_ORDER.md](docs/WORK_ORDER.md) (status and test checklists) and [docs/HANDOFF.md](docs/HANDOFF.md) (developer notes)
 
 ## Requirements
 
@@ -59,13 +59,34 @@ The demo user's payments have due dates relative to the day the data was created
 
 To recreate the demo data, empty the tables in phpMyAdmin (or drop `payalert_db` and run the three scripts again), then start the app.
 
+## What you can do
+
+| Screen | What it does |
+|---|---|
+| **Login / Register** | Sign in, or create an account. Problems show next to each field. |
+| **Dashboard** | Due in 7 days, Due tomorrow, Overdue and To Collect cards (each opens the matching list), your totals with the balance ring, and the next five unpaid payments. |
+| **Payments** | Every payment with status tabs (All, Upcoming, Partial, Paid, Overdue), I Owe / Owed to Me, category and search. Add, view, edit and delete. |
+| **Payment Details** | Balance ring, due date, details and the payment's history. **Record Payment** (or **Record Collection**) takes full or partial amounts. A recurring payment creates the next one when it's fully paid. |
+| **History** | Every recorded payment and collection with date range, direction and search, plus **Total Paid** and **Total Collected**. |
+| **Notifications** | Reminders before, on and after due dates, grouped by day. The sidebar badge shows how many are unread. Reminders are checked when you log in and every 5 minutes. |
+| **Settings** | Profile (name and email), Change Password, reminders on/off, default reminder (1, 3 or 7 days), and Log out. |
+| **Admin** (admins only) | Totals across PayAlert, and Manage Users: activate or deactivate accounts and reset passwords (a temporary password is shown once). |
+
+**Keyboard:** Enter saves a form or opens the selected row, Esc closes a dialog, Tab moves through each screen top to bottom, and Alt+Left goes back.
+
+## Display scaling
+
+The app is DPI-aware and was checked at the size of a maximized window on a 1920×1080 screen at 150% scaling. Every screen fits without scrollbars; long lists scroll with the mouse wheel and fade at the bottom when there is more.
+
+## Troubleshooting
+
+| Message | What to do |
+|---|---|
+| "Can't reach the database. Make sure MySQL is running in XAMPP." | Start MySQL in the XAMPP Control Panel. If it won't start, stop the separate *MySQL80* service (see step 1). |
+| "The PayAlert database wasn't found…" | Run the three SQL files (step 2). |
+| "MySQL refused the login…" | Set the right password in `PayAlert/App.config`. |
+| "This account is deactivated." | Ask an administrator to activate it in Admin → Manage Users. |
+
 ## Project status
 
-| Phase | Status |
-|---|---|
-| 1. Solution and database | Done: database scripts, connection test and demo data seeder |
-| 2. Theme, signature controls and dialogs | Done |
-| 3. Login and registration | Done |
-| 4. Main window | Done: sidebar, navigation with Back, admin-only menu, log out |
-| 5. Payments | Done: list with tabs, filters, search and sorting; add, edit, details and delete |
-| 6–11 | Not started yet (those screens show placeholders) |
+All 11 build phases from [PLAN.md](PLAN.md) are done. See [docs/WORK_ORDER.md](docs/WORK_ORDER.md) for each phase's checklist.
