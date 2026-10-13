@@ -24,6 +24,32 @@ Namespace Data
             Return If(table.Rows.Count = 0, Nothing, Map(table.Rows(0)))
         End Function
 
+        Public Shared Function FindById(userId As Integer) As User
+            Dim table = Db.Query(SelectColumns & "WHERE user_id = @id LIMIT 1", Db.P("@id", userId))
+            Return If(table.Rows.Count = 0, Nothing, Map(table.Rows(0)))
+        End Function
+
+        ''' <summary>True when another account (not <paramref name="exceptUserId"/>) already uses this email.</summary>
+        Public Shared Function EmailTakenByOther(email As String, exceptUserId As Integer) As Boolean
+            Return Convert.ToInt64(Db.ExecuteScalar("SELECT COUNT(*) FROM users WHERE email = @email AND user_id <> @id",
+                                                    Db.P("@email", email.Trim()), Db.P("@id", exceptUserId))) > 0
+        End Function
+
+        ''' <summary>Saves name and email. Returns False if the email was taken in the meantime.</summary>
+        Public Shared Function UpdateProfile(userId As Integer, fullName As String, email As String) As Boolean
+            Try
+                Db.ExecuteNonQuery("UPDATE users SET full_name = @name, email = @email WHERE user_id = @id",
+                                   Db.P("@name", fullName.Trim()), Db.P("@email", email.Trim()), Db.P("@id", userId))
+                Return True
+            Catch ex As MySqlException When ex.Number = ErrDuplicateKey
+                Return False
+            End Try
+        End Function
+
+        Public Shared Sub UpdatePasswordHash(userId As Integer, passwordHash As String)
+            Db.ExecuteNonQuery("UPDATE users SET password_hash = @hash WHERE user_id = @id", Db.P("@hash", passwordHash), Db.P("@id", userId))
+        End Sub
+
         Public Shared Function EmailExists(email As String) As Boolean
             Return Convert.ToInt64(Db.ExecuteScalar("SELECT COUNT(*) FROM users WHERE email = @email", Db.P("@email", email.Trim()))) > 0
         End Function

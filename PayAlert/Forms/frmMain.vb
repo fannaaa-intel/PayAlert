@@ -123,7 +123,7 @@ Namespace Forms
             _logoutButton.Size = New Size(196, 44)
             _logoutButton.Location = New Point(12, 0)
             _logoutButton.TabIndex = index
-            AddHandler _logoutButton.Click, AddressOf ConfirmLogOut
+            AddHandler _logoutButton.Click, Sub(s, e) RequestLogOut()
             _sidebar.Controls.Add(_logoutButton)
         End Sub
 
@@ -164,7 +164,9 @@ Namespace Forms
         Public Sub RefreshUnreadCount()
             If Not Session.IsSignedIn Then Return
             Try
-                SetUnreadCount(NotificationRepo.CountUnread(Session.CurrentUser.UserId))
+                Dim userId = Session.CurrentUser.UserId
+                ' With reminders turned off, the badge stays clear.
+                SetUnreadCount(If(SettingsRepo.Get(userId).NotificationsEnabled, NotificationRepo.CountUnread(userId), 0))
             Catch ex As Exception
                 Debug.WriteLine("[frmMain.RefreshUnreadCount] " & ex.ToString())
             End Try
@@ -176,7 +178,13 @@ Namespace Forms
             If _buttons.TryGetValue("notifications", button) Then button.BadgeCount = count
         End Sub
 
-        Private Sub ConfirmLogOut(sender As Object, e As EventArgs)
+        ''' <summary>Repaints the signed-in user block after the profile changes.</summary>
+        Public Sub RefreshUserBlock()
+            _sidebar.Invalidate()
+        End Sub
+
+        ''' <summary>Asks for confirmation, then logs out (from the sidebar or Settings).</summary>
+        Public Sub RequestLogOut()
             If PADialog.Confirm(Me, "Log out of PayAlert?", "You'll need your email and password to log in again.",
                                 "Log out", "Stay", Tone.Neutral, IconKind.Logout) Then
                 RaiseEvent LoggedOut(Me, EventArgs.Empty)

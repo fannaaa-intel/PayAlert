@@ -5,7 +5,7 @@ Imports PayAlert.Models
 
 Namespace Data
 
-    ''' <summary>The user's preferences (user_settings). Phase 9 adds saving.</summary>
+    ''' <summary>The user's preferences (user_settings).</summary>
     Public NotInheritable Class SettingsRepo
 
         Private Sub New()
@@ -24,6 +24,15 @@ Namespace Data
             End If
             Return settings
         End Function
+
+        ''' <summary>Saves the notification switch and default reminder (creates the row if it's missing).</summary>
+        Public Shared Sub Save(settings As UserSettings)
+            Dim days = If(settings.DefaultReminderDays = 1 OrElse settings.DefaultReminderDays = 7, settings.DefaultReminderDays, 3)
+            Db.ExecuteNonQuery(
+                "INSERT INTO user_settings (user_id, notifications_enabled, default_reminder_days) VALUES (@user, @enabled, @days) " &
+                "ON DUPLICATE KEY UPDATE notifications_enabled = VALUES(notifications_enabled), default_reminder_days = VALUES(default_reminder_days)",
+                Db.P("@user", settings.UserId), Db.P("@enabled", If(settings.NotificationsEnabled, 1, 0)), Db.P("@days", days))
+        End Sub
 
     End Class
 

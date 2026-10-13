@@ -180,6 +180,9 @@ Namespace Views
                     Prefill(_existing)
                 Else
                     _due.Value = Date.Today.AddDays(7)
+                    ' New payments start at the user's default reminder (Settings).
+                    Dim defaultDays = SettingsRepo.Get(Session.CurrentUser.UserId).DefaultReminderDays
+                    _reminder.SelectedIndex = Math.Max(0, Array.IndexOf(ReminderChoices, defaultDays))
                 End If
             Catch ex As Exception
                 Debug.WriteLine("[ucPaymentEditor] " & ex.ToString())
