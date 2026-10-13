@@ -17,12 +17,13 @@ Namespace Data
         End Sub
 
         Public Shared Function GetStats() As AdminStats
+            ' Overdue is counted by its rule (money left and the due date passed), not by comparing the view's status
+            ' text: that text's collation can differ from the connection's on some servers ("Illegal mix of collations").
             Dim table = Db.Query(
                 "SELECT (SELECT COUNT(*) FROM users) AS total_users, " &
                 "(SELECT COUNT(*) FROM users WHERE is_active = 1) AS active_users, " &
                 "(SELECT COUNT(*) FROM v_payment_summary) AS total_payments, " &
-                "(SELECT COUNT(*) FROM v_payment_summary WHERE status = @overdue) AS overdue_payments",
-                Db.P("@overdue", Theme.StatusOverdue))
+                "(SELECT COUNT(*) FROM v_payment_summary WHERE balance > 0 AND days_until_due < 0) AS overdue_payments")
             Dim row = table.Rows(0)
             Return New AdminStats With {
                 .TotalUsers = Convert.ToInt32(row("total_users")),

@@ -63,6 +63,7 @@ Models/              User, Payment, PaymentSummary (row of v_payment_summary), C
 - A control anchored Bottom inside a panel that is docked later keeps the wrong distance. Position it in the panel's `Layout` event.
 - `Format.Money` needs `Imports PayAlert.Services`; otherwise VB's own `Format()` function wins.
 - `List.Count(predicate)` doesn't compile in VB. Use `.Where(...).Count()`.
+- **Never compare `v_payment_summary.status` (or any text computed in the view) in SQL.** When phpMyAdmin creates the view, its text gets `utf8mb4_unicode_ci`, while the app connects with the server default `utf8mb4_general_ci`, so `status = @x` fails with "Illegal mix of collations". Filter by status in VB, or use the rule (`balance > 0 AND days_until_due < 0` for overdue). To reproduce in tests, load the SQL files after `SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;` on a server with `collation-server=utf8mb4_general_ci`.
 - `TextRenderer.MeasureText` with `EndEllipsis` and `Size.Empty` measures almost nothing ("D…"). Measure without EndEllipsis.
 - DataGridView row and header heights don't auto-scale. PaymentGrid sets them from `DeviceDpi` in `OnHandleCreated`.
 - Views are created at runtime: PAView uses `AutoScaleMode.Dpi`. Dialogs and toasts don't auto-scale; they use `Theme.Px()`.
