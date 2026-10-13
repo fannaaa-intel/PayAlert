@@ -81,8 +81,7 @@ Friend NotInheritable Class AppFlow
     End Sub
 
     Private Sub ShowMain(previous As Form)
-        ' Phase 3: the component preview stands in for frmMain (Phase 4).
-        Dim main As New frmPreview()
+        Dim main As New frmMain()
         AddHandler main.LoggedOut,
             Sub(s, e)
                 Dim email = If(Session.CurrentUser?.Email, "")

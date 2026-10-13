@@ -38,6 +38,7 @@ Namespace Forms
             ForeColor = Theme.TextPrimary
             Font = Theme.FontBody
             KeyPreview = True
+            Icon = AppIcon.Icon
             Opacity = 0
             Controls.Add(_closeButton)
             Controls.Add(_minimizeButton)
