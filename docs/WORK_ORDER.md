@@ -3,7 +3,7 @@
 The 11 build phases from [PLAN.md](../PLAN.md) §9, with status and a test checklist for each.
 Rules: one phase at a time. After each phase, build, test, then commit as `Phase N: <summary>` once the user confirms. **Push only when the user says "push".**
 
-_Last updated: 2026-10-14 (session 2: Phases 6 and 7 done)_
+_Last updated: 2026-10-14 (session 2: Phases 6, 7 and 8 done)_
 
 | # | Work order | Status | Commit |
 |---|---|---|---|
@@ -14,8 +14,8 @@ _Last updated: 2026-10-14 (session 2: Phases 6 and 7 done)_
 | 5 | Payments (list, add/edit, details, delete) | ✅ Done | `77cbf80` |
 | 6 | Transactions, history and recurrence | ✅ Done | `005b9a7` |
 | 7 | Dashboard | ✅ Done | `e4ab477` |
-| 8 | Notifications | ⏳ **Next** | |
-| 9 | Settings and profile | ⏳ | |
+| 8 | Notifications | ✅ Done | `57c3145` |
+| 9 | Settings and profile | ⏳ **Next** | |
 | 10 | Admin | ⏳ | |
 | 11 | Polish | ⏳ | |
 
@@ -80,15 +80,15 @@ Done when: numbers match the Payments screen.
 - [x] Upcoming Payments: next 5 unpaid by due date, with DueTag and StatusPill; click opens details
 - [x] Empty state "No payments yet. Add your first one."
 
-## 8. Notifications ⏳ NEXT
+## 8. Notifications ✅
 Done when: demo data produces the expected alerts, with no duplicates.
-- [ ] `NotificationRepo` + `ReminderService`: run at login and every 5 minutes when `notifications_enabled = 1`; due_soon / due_tomorrow / due_today / overdue; duplicates blocked by the unique key (use INSERT IGNORE)
-- [ ] ucNotifications: cards newest first, colored dot, title, message, relative time; unread cards BrandSoft; click marks read and opens the payment; Mark all as read (toast)
-- [ ] Sidebar badge: `frmMain.SetUnreadCount(n)` already exists
+- [x] `NotificationRepo` + `ReminderService`: run at login and every 5 minutes when `notifications_enabled = 1`; due_soon / due_tomorrow / due_today / overdue; duplicates blocked by the unique key (use INSERT IGNORE)
+- [x] ucNotifications: cards newest first, colored dot, title, message, relative time; unread cards BrandSoft; click marks read and opens the payment; Mark all as read (toast)
+- [x] Sidebar badge: `frmMain.SetUnreadCount(n)` already exists
 
-## 9. Settings and profile ⏳
+## 9. Settings and profile ⏳ NEXT
 Done when: all settings save and reload.
-- [ ] `SettingsRepo`; ucSettings cards: Account (Profile, Change Password), Notifications (toggle, default reminder 1/3/7), Preferences (Currency PHP, read-only), Log out
+- [ ] `SettingsRepo` (Get already exists from Phase 8; add Save); ucSettings cards: Account (Profile, Change Password), Notifications (toggle, default reminder 1/3/7), Preferences (Currency PHP, read-only), Log out
 - [ ] ucProfile: edit full name and email (email stays unique); refresh the sidebar user block
 - [ ] dlgChangePassword: current, new (8+ characters), confirm
 - [ ] Payment editor uses the user's default reminder (it currently starts at 3 days)

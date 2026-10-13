@@ -1,11 +1,11 @@
 # PayAlert: Session Hand-off
 
-_Updated in session 2 (2026-10-14), after Phase 7. Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
+_Updated in session 2 (2026-10-14), after Phase 8. Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
 
 ## Where we stopped
-- Phases 1–7 are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477` "Phase 7: dashboard").
+- Phases 1–8 are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477`, Phase 8 = `57c3145` "Phase 8: notifications").
 - **Nothing is pushed.** The remote `origin` is https://github.com/fannaaa-intel/PayAlert.git. Push only when the user says "push".
-- **Next: Phase 8** (Notifications). The checklist is in WORK_ORDER.md.
+- **Next: Phase 9** (Settings and profile). The checklist is in WORK_ORDER.md.
 
 ## How the user works
 - One phase at a time. Build, test, show the result, and wait for the user's OK before committing or starting the next phase.
@@ -26,21 +26,23 @@ Program.vb           AppFlow (ApplicationContext): frmLogin <-> frmRegister -> f
 Forms/               PAWindow (borderless base, rounded + layered shadow) -> AuthWindow -> frmLogin, frmRegister
                      frmMain (sidebar + content host driven by Navigator)
 Views/               PAView base (header band, Body panel, Back button, AddHeaderAction/SetHeaderActionVisible)
-                     ucDashboard, ucPayments (+ DueWindow chip filter; InWindow shared with the dashboard), ucPaymentEditor, ucPaymentDetails, ucHistory = real; the others are placeholders (AddPlaceholder)
+                     ucDashboard, ucNotifications, ucPayments (+ DueWindow chip filter; InWindow shared with the dashboard), ucPaymentEditor, ucPaymentDetails, ucHistory = real; the others are placeholders (AddPlaceholder)
 Controls/            PAControl base; buttons; SoftCard; DueTag; BalanceRing; StatusPill; SummaryCard; SidebarButton;
                      PATextBox (icon, password eye, multiline); PesoTextBox; PASelect + SelectList; PADatePicker + CalendarPanel;
                      PopupHost (ToolStripDropDown); SegmentedControl; StatusTabs; PaymentGrid (custom-drawn DataGridView);
-                     TransactionGrid (same style; Compact mode for the details card); UpcomingList; RowPainter (shared compact due tag + status pill); EmptyState (Compact mode); InlineMessage;
+                     TransactionGrid (same style; Compact mode for the details card); UpcomingList; NotificationList (day-grouped cards, wheel scroll); RowPainter (shared compact due tag + status pill); EmptyState (Compact mode); InlineMessage;
                      PageHeader; ChromeButton; AuthArt
 Dialogs/             PADialog (Confirm/Info/Success/Error, and ShowForm to host a form body implementing IDialogBody),
                      dlgRecordPayment (an IDialogBody; reuse the same pattern for dlgChangePassword), PAToast.Notify,
                      DimOverlay, ShadowWindow, Native (Win32)
-Data/                Db (parameterized helpers, FriendlyMessageFor), UserRepo, CategoryRepo, PaymentRepo, TransactionRepo
+Data/                Db (parameterized helpers, FriendlyMessageFor), UserRepo, CategoryRepo, PaymentRepo, TransactionRepo,
+                     NotificationRepo (INSERT IGNORE), SettingsRepo (Get only so far)
 Services/            Session, AuthService (BCrypt), Navigator, DemoDataSeeder, Format (Money, ShortDate, DuePhrase, RelativeDay),
                      TransactionService.Record (one DB transaction: lock payment row, check balance, insert, then
-                     RecurrenceService.CreateNextIfPaid), RecurrenceService (NextDueDate, no duplicate children)
+                     RecurrenceService.CreateNextIfPaid), RecurrenceService (NextDueDate, no duplicate children),
+                     ReminderService (one most-specific reminder per unpaid payment per day; frmMain runs it at login + 5-min timer)
 Theme/               Theme (tokens, fonts, Px), Gfx (rounded/notched paths, shadow, logo mark), Icons (GDI+ line icons), AppIcon
-Models/              User, Payment, PaymentSummary (row of v_payment_summary), Category, PaymentTransaction
+Models/              User, Payment, PaymentSummary (row of v_payment_summary), Category, PaymentTransaction, Notification, UserSettings
 ```
 - Navigation: `Navigator.ShowRoot(view)` for sidebar sections, `Push(view)` for inner screens, `GoBack()`, `BackToRoot()`. Views reload their data in `OnNavigatedTo()`. Screens left behind are disposed through BeginInvoke.
 - All reads go through `v_payment_summary`, and every query filters by `Session.CurrentUser.UserId`.
@@ -82,7 +84,8 @@ Models/              User, Payment, PaymentSummary (row of v_payment_summary), C
   - pass `.psobject.BaseObject` when giving objects to reflection calls
 - Rule checks to run before finishing each phase: no `MessageBox`; no `New ComboBox/DateTimePicker/Button(`; no SQL outside `Data/` (and the seeder); `Option Strict On` + `Option Explicit On` in every file; no hard-coded colors outside Theme.vb; no third-party brand names.
 
-## Next steps (Phase 8)
-1. `NotificationRepo` (INSERT IGNORE against the unique key, list newest first, unread count, mark read / mark all read) and `Models/Notification`.
-2. `ReminderService`: run at login and every 5 minutes (WinForms Timer in frmMain) when `notifications_enabled = 1`; types due_soon / due_tomorrow / due_today / overdue.
-3. `ucNotifications` cards; sidebar badge through `frmMain.SetUnreadCount(n)`. Test no duplicates on repeated runs, show the user, commit after they confirm.
+## Next steps (Phase 9)
+1. `SettingsRepo.Save`; ucSettings cards: Account (Profile -> ucProfile, Change Password -> dlgChangePassword), Notifications (toggle + default reminder 1/3/7), Preferences (Currency PHP read-only), Log out (danger, confirm; reuse frmMain's log-out flow).
+2. ucProfile: full name + email (unique); update Session.CurrentUser and repaint the sidebar user block.
+3. dlgChangePassword as an IDialogBody inside PADialog.ShowForm (like dlgRecordPayment). The payment editor starts at the user's default reminder.
+4. Turning notifications off should clear the badge; turning them on should run ReminderService right away.
