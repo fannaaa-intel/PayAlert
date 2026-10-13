@@ -1,11 +1,11 @@
 # PayAlert: Session Hand-off
 
-_Updated in session 2 (2026-10-14), after Phase 10. Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
+_Updated in session 2 (2026-10-14), after Phase 11 (all phases done). Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
 
 ## Where we stopped
-- Phases 1–10 are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477`, Phase 8 = `57c3145`, Phase 9 = `279c927`, Phase 10 = `5528c33` "Phase 10: admin").
-- **Nothing is pushed.** The remote `origin` is https://github.com/fannaaa-intel/PayAlert.git. Push only when the user says "push".
-- **Next: Phase 11** (Polish), the last phase. The checklist is in WORK_ORDER.md.
+- All 11 phases are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477`, Phase 8 = `57c3145`, Phase 9 = `279c927`, Phase 10 = `5528c33`, Phase 11 = `284e1db` "Phase 11: polish").
+- **Pushed** to https://github.com/fannaaa-intel/PayAlert.git (`main`) on 2026-10-14 at the user's request. Push again only when the user says "push".
+- **Next:** nothing planned. Remaining manual check: open each screen once at real 150% scaling on the client PC. The checklist is in WORK_ORDER.md.
 
 ## How the user works
 - One phase at a time. Build, test, show the result, and wait for the user's OK before committing or starting the next phase.
@@ -85,10 +85,9 @@ Models/              User, Payment, PaymentSummary (row of v_payment_summary), C
   - pass `.psobject.BaseObject` when giving objects to reflection calls
 - Rule checks to run before finishing each phase: no `MessageBox`; no `New ComboBox/DateTimePicker/Button(`; no SQL outside `Data/` (and the seeder); `Option Strict On` + `Option Explicit On` in every file; no hard-coded colors outside Theme.vb; no third-party brand names.
 
-## Next steps (Phase 11: Polish)
-1. Full walkthrough of every screen: empty states, tab order, Enter/Esc, validation messages, spacing.
-2. Check at 150% display scaling (the client PC) and fix anything cut off.
-3. Final README; exe icon file. Search for MessageBox and third-party brand names. Show the user and commit `Phase 11: ...` after they confirm.
+## Next steps
+- Only the manual 150% check on the client PC is left. Any changes after this are fixes the user asks for.
+- Tab order: the Navigator calls `PAView.ApplyVisualTabOrder()` on every screen; display-only custom controls must set `TabStop = False` and `Selectable` off.
 
 ## Testing tip (session 2)
 If the user has PayAlert open, `dotnet build` can't overwrite the exe. Don't close their window: build into the scratchpad with

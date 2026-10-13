@@ -3,7 +3,7 @@
 The 11 build phases from [PLAN.md](../PLAN.md) §9, with status and a test checklist for each.
 Rules: one phase at a time. After each phase, build, test, then commit as `Phase N: <summary>` once the user confirms. **Push only when the user says "push".**
 
-_Last updated: 2026-10-14 (session 2: Phases 6-10 done)_
+_Last updated: 2026-10-14 (session 2: all 11 phases done, pushed to GitHub)_
 
 | # | Work order | Status | Commit |
 |---|---|---|---|
@@ -17,9 +17,9 @@ _Last updated: 2026-10-14 (session 2: Phases 6-10 done)_
 | 8 | Notifications | ✅ Done | `57c3145` |
 | 9 | Settings and profile | ✅ Done | `279c927` |
 | 10 | Admin | ✅ Done | `5528c33` |
-| 11 | Polish | ⏳ **Next** | |
+| 11 | Polish | ✅ Done | `284e1db` |
 
-Nothing has been pushed to GitHub yet.
+Pushed to GitHub (`origin/main`) on 2026-10-14 at the user's request.
 
 ---
 
@@ -98,8 +98,8 @@ Done when: the admin can deactivate or reset a user, and a regular user can't se
 - [x] `AdminRepo`; ucAdminDashboard cards: Total Users, Active Users, Total Payments, Overdue Payments
 - [x] ucAdminUsers grid: Name, Email, Role, Status, Created; Activate/Deactivate (not yourself) with a confirm; Reset Password shows a temporary password once
 
-## 11. Polish ⏳ NEXT
+## 11. Polish ✅
 Done when: full walkthrough with no crashes; every screen matches §6, §6A and §6B; no `MessageBox`; no brand names.
-- [ ] Empty states, tab order, Enter/Esc everywhere, validation messages, consistent spacing
-- [ ] Check at 150% display scaling (the client PC); fix anything cut off
-- [ ] Final README; exe icon file; replace the placeholder logo if the client sends theirs
+- [x] Empty states, tab order (now visual, set by the Navigator), Enter/Esc everywhere, validation messages, consistent spacing
+- [x] Checked at the 150% layout size (1280×688 maximized) and at 1920×1040; fixed Payment Details. Still to do by hand: one look at real 150% scaling on the client PC
+- [x] Final README; exe icon (`PayAlert/Resources/PayAlert.ico`). Replace the logo if the client sends theirs
