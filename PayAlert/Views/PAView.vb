@@ -24,7 +24,8 @@ Namespace Views
         Protected ReadOnly Body As New Panel()
         Private ReadOnly _backRow As New Panel()
         Private ReadOnly _backButton As New PAButton()
-        Private _actionsRight As Integer
+        Private ReadOnly _actions As New Collections.Generic.List(Of Control)
+        Private ReadOnly _hiddenActions As New Collections.Generic.HashSet(Of Control)
 
         Public Sub New()
             SuspendLayout()
@@ -51,7 +52,6 @@ Namespace Views
             Header.Dock = DockStyle.Top
             Header.Height = 76
             Header.Width = ViewWidth - Theme.ContentPadding * 2
-            _actionsRight = Header.Width
 
             Body.Dock = DockStyle.Fill
             Body.BackColor = Theme.AppBackground
@@ -106,9 +106,28 @@ Namespace Views
         ''' <summary>Adds a button to the right side of the header band (rightmost first).</summary>
         Protected Sub AddHeaderAction(action As Control)
             action.Anchor = AnchorStyles.Top Or AnchorStyles.Right
-            action.Location = New Point(_actionsRight - action.Width, 6)
-            _actionsRight = action.Left - Theme.Space12
+            action.Top = 6
+            _actions.Add(action)
             Header.Controls.Add(action)
+            LayoutHeaderActions()
+        End Sub
+
+        ''' <summary>Shows or hides a header action; the others slide over so there is never a gap.</summary>
+        Protected Sub SetHeaderActionVisible(action As Control, visible As Boolean)
+            If visible Then _hiddenActions.Remove(action) Else _hiddenActions.Add(action)
+            action.Visible = visible
+            LayoutHeaderActions()
+        End Sub
+
+        ' Runs at construction (logical pixels, before auto-scaling) and on show/hide (real pixels, after scaling).
+        Private Sub LayoutHeaderActions()
+            Dim scale = If(IsHandleCreated, DeviceDpi / 96.0F, 1.0F)
+            Dim right = Header.ClientSize.Width
+            For Each action In _actions
+                If _hiddenActions.Contains(action) Then Continue For
+                action.Left = right - action.Width
+                right = action.Left - CInt(Theme.Space12 * scale)
+            Next
         End Sub
 
         ''' <summary>Called each time the Navigator shows this screen (first time and when coming back to it).</summary>

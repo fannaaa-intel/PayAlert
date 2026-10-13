@@ -32,6 +32,8 @@ Public Enum IconKind
     Edit
     Mail
     Lock
+    ChevronDown
+    ChevronRight
 End Enum
 
 ''' <summary>
@@ -200,6 +202,12 @@ Public NotInheritable Class Icons
                         End Using
                         g.DrawEllipse(pen, R(9.2F, 9.2F, 5.6F, 5.6F))
                         If kind = IconKind.EyeOff Then g.DrawLine(pen, P(4.5F, 4.5F), P(19.5F, 19.5F))
+
+                    Case IconKind.ChevronDown
+                        g.DrawLines(pen, {P(6.5F, 9.5F), P(12, 15), P(17.5F, 9.5F)})
+
+                    Case IconKind.ChevronRight
+                        g.DrawLines(pen, {P(9.5F, 6), P(15.5F, 12), P(9.5F, 18)})
 
                     Case IconKind.Mail
                         DrawRound(g, pen, R(3, 5.5F, 18, 13), 2.5F * k)

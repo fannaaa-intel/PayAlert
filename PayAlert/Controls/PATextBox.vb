@@ -97,6 +97,21 @@ Namespace Controls
             End Set
         End Property
 
+        ''' <summary>Several lines of text (for notes); the field grows with its Height.</summary>
+        <Category("Behavior"), DefaultValue(False)>
+        Public Property Multiline As Boolean
+            Get
+                Return Box.Multiline
+            End Get
+            Set(value As Boolean)
+                Box.Multiline = value
+                Box.WordWrap = True
+                Box.ScrollBars = ScrollBars.None
+                Box.AcceptsReturn = value
+                PerformLayout()
+            End Set
+        End Property
+
         <Category("Behavior"), DefaultValue(32767)>
         Public Property MaxLength As Integer
             Get
@@ -226,7 +241,11 @@ Namespace Controls
             If Box Is Nothing Then Return   ' the base constructor lays out before field initializers run
             Dim left = If(_icon = IconKind.None, PxI(14), PxI(14 + 18 + 10))
             Dim right = If(_isPassword, EyeRect.Width + PxI(4), PxI(14))
-            Box.SetBounds(left, (Height - Box.PreferredHeight) \ 2 + PxI(1), Math.Max(10, Width - left - right), Box.PreferredHeight)
+            If Box.Multiline Then
+                Box.SetBounds(left, PxI(11), Math.Max(10, Width - left - right), Math.Max(10, Height - PxI(22)))
+            Else
+                Box.SetBounds(left, (Height - Box.PreferredHeight) \ 2 + PxI(1), Math.Max(10, Width - left - right), Box.PreferredHeight)
+            End If
         End Sub
 
         Protected Overrides Sub OnPaint(e As PaintEventArgs)

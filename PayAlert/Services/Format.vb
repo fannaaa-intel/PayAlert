@@ -33,6 +33,28 @@ Namespace Services
             Return value.ToString("MMM d, yyyy", CultureInfo.InvariantCulture)
         End Function
 
+        ''' <summary>"Due today", "Due tomorrow", "Due in 3 days", "1 day overdue", "4 days overdue".</summary>
+        Public Shared Function DuePhrase(daysUntilDue As Integer) As String
+            Select Case daysUntilDue
+                Case 0 : Return "Due today"
+                Case 1 : Return "Due tomorrow"
+                Case -1 : Return "1 day overdue"
+                Case Is > 1 : Return "Due in " & daysUntilDue & " days"
+                Case Else : Return (-daysUntilDue) & " days overdue"
+            End Select
+        End Function
+
+        ''' <summary>Short relative form for info rows: "today", "tomorrow", "in 3 days", "2 days ago".</summary>
+        Public Shared Function RelativeDay(daysUntilDue As Integer) As String
+            Select Case daysUntilDue
+                Case 0 : Return "today"
+                Case 1 : Return "tomorrow"
+                Case -1 : Return "yesterday"
+                Case Is > 1 : Return "in " & daysUntilDue & " days"
+                Case Else : Return (-daysUntilDue) & " days ago"
+            End Select
+        End Function
+
         ''' <summary>"Just now", "10 min ago", "2 hr ago", "Yesterday", then the date.</summary>
         Public Shared Function Relative(value As DateTime, Optional now As DateTime? = Nothing) As String
             Dim current = If(now, DateTime.Now)

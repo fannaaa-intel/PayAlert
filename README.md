@@ -65,5 +65,6 @@ To recreate the demo data, empty the tables in phpMyAdmin (or drop `payalert_db`
 | 1. Solution and database | Done: database scripts, connection test and demo data seeder |
 | 2. Theme, signature controls and dialogs | Done |
 | 3. Login and registration | Done |
-| 4. Main window | Done: sidebar, navigation with Back, admin-only menu, log out. Screens show placeholders until their phase |
-| 5–11 | Not started yet |
+| 4. Main window | Done: sidebar, navigation with Back, admin-only menu, log out |
+| 5. Payments | Done: list with tabs, filters, search and sorting; add, edit, details and delete |
+| 6–11 | Not started yet (those screens show placeholders) |
