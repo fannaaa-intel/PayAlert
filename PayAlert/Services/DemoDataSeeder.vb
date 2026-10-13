@@ -27,8 +27,6 @@ Namespace Services
         Public Const DemoEmail As String = "demo@payalert.com"
         Public Const DemoPassword As String = "Demo@123"
 
-        Private Const BcryptWorkFactor As Integer = 11
-
         Private Sub New()
         End Sub
 
@@ -163,14 +161,7 @@ Namespace Services
         ''' <summary>Creates a user plus the matching user_settings row (default settings).</summary>
         Private Shared Function CreateUser(conn As MySqlConnection, tx As MySqlTransaction,
                                            fullName As String, email As String, password As String, role As String) As Integer
-            Dim userId = Db.Insert(conn, tx,
-                "INSERT INTO users (full_name, email, password_hash, role) VALUES (@name, @email, @hash, @role)",
-                Db.P("@name", fullName),
-                Db.P("@email", email),
-                Db.P("@hash", BCrypt.Net.BCrypt.HashPassword(password, BcryptWorkFactor)),
-                Db.P("@role", role))
-            Db.ExecuteNonQuery(conn, tx, "INSERT INTO user_settings (user_id) VALUES (@user)", Db.P("@user", userId))
-            Return userId
+            Return UserRepo.CreateUser(conn, tx, fullName, email, AuthService.HashPassword(password), role)
         End Function
 
     End Class

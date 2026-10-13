@@ -30,6 +30,8 @@ Public Enum IconKind
     Eye
     EyeOff
     Edit
+    Mail
+    Lock
 End Enum
 
 ''' <summary>
@@ -198,6 +200,17 @@ Public NotInheritable Class Icons
                         End Using
                         g.DrawEllipse(pen, R(9.2F, 9.2F, 5.6F, 5.6F))
                         If kind = IconKind.EyeOff Then g.DrawLine(pen, P(4.5F, 4.5F), P(19.5F, 19.5F))
+
+                    Case IconKind.Mail
+                        DrawRound(g, pen, R(3, 5.5F, 18, 13), 2.5F * k)
+                        g.DrawLines(pen, {P(4, 7), P(12, 13), P(20, 7)})
+
+                    Case IconKind.Lock
+                        DrawRound(g, pen, R(5, 10.5F, 14, 10), 2.5F * k)
+                        g.DrawArc(pen, R(8, 4, 8, 8), 180, 180)
+                        g.DrawLine(pen, P(8, 8), P(8, 10.5F))
+                        g.DrawLine(pen, P(16, 8), P(16, 10.5F))
+                        g.DrawLine(pen, P(12, 14.5F), P(12, 16.5F))
 
                     Case IconKind.Edit
                         g.DrawLines(pen, {P(14.5F, 5.5F), P(18.5F, 9.5F), P(9, 19), P(5, 19), P(5, 15), P(14.5F, 5.5F)})

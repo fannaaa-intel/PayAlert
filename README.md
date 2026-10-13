@@ -43,7 +43,7 @@ The app creates the demo accounts and payments itself, the first time it starts 
 dotnet build
 ```
 
-Then run `PayAlert\bin\Debug\net48\PayAlert.exe`, or open `PayAlert.sln` in Visual Studio and press **F5**.
+Then run `PayAlert\bin\Debug\net48\PayAlert.exe`, or open `PayAlert.sln` in Visual Studio and press **F5**. The app opens on the login window.
 
 The connection string is in `PayAlert/App.config` (`PayAlertDb`). It uses the XAMPP default: user `root` with no password. If your MySQL root user has a password, set `Pwd=` there.
 
@@ -63,5 +63,6 @@ To recreate the demo data, empty the tables in phpMyAdmin (or drop `payalert_db`
 | Phase | Status |
 |---|---|
 | 1. Solution and database | Done: database scripts, connection test and demo data seeder |
-| 2. Theme, signature controls and dialogs | Done: the app currently opens a temporary component preview (its "Run setup check" button opens the Phase 1 database check) |
-| 3–11 | Not started yet |
+| 2. Theme, signature controls and dialogs | Done |
+| 3. Login and registration | Done: after logging in, a temporary component preview stands in for the main window (Phase 4) |
+| 4–11 | Not started yet |

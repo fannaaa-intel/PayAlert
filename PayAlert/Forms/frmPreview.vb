@@ -2,6 +2,7 @@ Option Strict On
 Option Explicit On
 
 Imports System.Collections.Generic
+Imports System.Linq
 Imports System.Drawing
 Imports System.Windows.Forms
 Imports PayAlert.Controls
@@ -11,8 +12,8 @@ Imports PayAlert.Services
 Namespace Forms
 
     ''' <summary>
-    ''' TEMPORARY (Phase 2 only): shows every shared control and every dialog/toast tone so the visual
-    ''' system can be reviewed before real screens exist. Removed when frmMain arrives (Phase 4).
+    ''' TEMPORARY (Phases 2-3): shows every shared control and every dialog/toast tone, and stands in for the
+    ''' main window after login (signed-in user + Log out). Replaced by frmMain in Phase 4.
     ''' </summary>
     Public Class frmPreview
         Inherits Form
@@ -23,6 +24,10 @@ Namespace Forms
         Private ReadOnly _pages As New Dictionary(Of SidebarButton, Panel)
         Private ReadOnly _pageTitles As New Dictionary(Of SidebarButton, String())
         Private ReadOnly _rings As New List(Of BalanceRing)
+        Private _logoutButton As SidebarButton
+
+        ''' <summary>Raised after the user confirms Log out.</summary>
+        Public Event LoggedOut As EventHandler
 
         Public Sub New()
             SuspendLayout()
@@ -76,16 +81,19 @@ Namespace Forms
                 If first Is Nothing Then first = button
             Next
 
-            Dim closeButton As New SidebarButton() With {
-                .Text = "Close preview", .Icon = IconKind.Logout,
+            _logoutButton = New SidebarButton() With {
+                .Text = "Log out", .Icon = IconKind.Logout,
                 .Location = New Point(12, 760 - 40 - 44 - 24), .Size = New Size(196, 44),
                 .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left, .TabIndex = items.Length}
-            AddHandler closeButton.Click,
+            AddHandler _logoutButton.Click,
                 Sub(s, e)
-                    If PADialog.Confirm(Me, "Close the preview?", "You can open it again any time by starting PayAlert.",
-                                        "Close preview", "Stay", Tone.Neutral, IconKind.Logout) Then Close()
+                    If PADialog.Confirm(Me, "Log out of PayAlert?", "You'll need your email and password to log in again.",
+                                        "Log out", "Stay", Tone.Neutral, IconKind.Logout) Then
+                        RaiseEvent LoggedOut(Me, EventArgs.Empty)
+                    End If
                 End Sub
-            _sidebar.Controls.Add(closeButton)
+            _sidebar.Controls.Add(_logoutButton)
+            AddHandler _sidebar.Resize, Sub(s, e) _sidebar.Invalidate()
 
             Controls.Add(_sidebar)
             ShowPage(first)
@@ -106,6 +114,28 @@ Namespace Forms
             Dim y = CInt(mark.Y + (mark.Height - paySize.Height) / 2.0F)
             TextRenderer.DrawText(g, "Pay", Theme.FontWordmark, New Point(x, y), Theme.TextPrimary, flags)
             TextRenderer.DrawText(g, "Alert", Theme.FontWordmark, New Point(x + paySize.Width, y), Theme.Brand, flags)
+
+            ' Signed-in user, just above Log out: initials disc, name and role.
+            Dim user = Session.CurrentUser
+            If user Is Nothing OrElse _logoutButton Is Nothing Then Return
+            Dim top = _logoutButton.Top - CInt(64 * s)
+            Using rule As New Pen(Theme.Border)
+                g.DrawLine(rule, CInt(20 * s), top - CInt(10 * s), _sidebar.Width - CInt(20 * s), top - CInt(10 * s))
+            End Using
+            Dim disc As New RectangleF(20 * s, top + 6 * s, 36 * s, 36 * s)
+            Using fill As New SolidBrush(Theme.BrandSoft)
+                g.FillEllipse(fill, disc)
+            End Using
+            Dim initials = String.Concat(user.FullName.Split(New Char() {" "c}, StringSplitOptions.RemoveEmptyEntries).
+                                         Take(2).Select(Function(part) Char.ToUpperInvariant(part(0))))
+            TextRenderer.DrawText(g, initials, Theme.FontCaptionBold, Rectangle.Round(disc), Theme.BrandDark,
+                                  TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPadding)
+            Dim textX = CInt(disc.Right + 10 * s)
+            Dim textWidth = _sidebar.Width - textX - CInt(16 * s)
+            TextRenderer.DrawText(g, user.FullName, Theme.FontBodyBold, New Rectangle(textX, CInt(top + 6 * s), textWidth, CInt(20 * s)),
+                                  Theme.TextPrimary, flags Or TextFormatFlags.EndEllipsis)
+            TextRenderer.DrawText(g, If(user.IsAdmin, "Administrator", "User") & "  ·  " & user.Email, Theme.FontCaption,
+                                  New Rectangle(textX, CInt(top + 26 * s), textWidth, CInt(18 * s)), Theme.TextMuted, flags Or TextFormatFlags.EndEllipsis)
         End Sub
 
         Private Sub BuildContent()
@@ -114,18 +144,6 @@ Namespace Forms
             _header.Dock = DockStyle.Top
             _header.Height = 76
             _header.Width = 1280 - Theme.SidebarWidth - Theme.ContentPadding * 2
-            Dim setupButton As New SecondaryButton() With {
-                .Text = "Run setup check", .Icon = IconKind.Settings, .Size = New Size(170, Theme.ButtonHeight),
-                .Anchor = AnchorStyles.Top Or AnchorStyles.Right}
-            setupButton.Location = New Point(_header.Width - setupButton.Width, 6)
-            AddHandler setupButton.Click,
-                Sub(s, e)
-                    Using check As New frmSetupCheck()
-                        check.StartPosition = FormStartPosition.CenterParent
-                        check.ShowDialog(Me)
-                    End Using
-                End Sub
-            _header.Controls.Add(setupButton)
 
             _pageHost.Dock = DockStyle.Fill
             Dim spacer As New Panel() With {.Dock = DockStyle.Top, .Height = 20}

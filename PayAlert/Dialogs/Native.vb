@@ -90,6 +90,11 @@ Namespace Dialogs
         Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr) As IntPtr
         End Function
 
+        <DllImport("user32.dll")>
+        Private Shared Function SetWindowPos(hWnd As IntPtr, hWndInsertAfter As IntPtr, x As Integer, y As Integer,
+                                             cx As Integer, cy As Integer, flags As UInteger) As Boolean
+        End Function
+
         <DllImport("dwmapi.dll")>
         Private Shared Function DwmGetWindowAttribute(hwnd As IntPtr, attr As Integer, ByRef value As RECTAPI, size As Integer) As Integer
         End Function
@@ -118,6 +123,16 @@ Namespace Dialogs
                 End If
                 DeleteDC(memDc)
             End Try
+        End Sub
+
+        ''' <summary>Moves a window directly below another one in the z-order, without moving, sizing or activating it.</summary>
+        Public Shared Sub PlaceBelow(window As Form, reference As Form)
+            Const SWP_NOSIZE As UInteger = &H1UI
+            Const SWP_NOMOVE As UInteger = &H2UI
+            Const SWP_NOACTIVATE As UInteger = &H10UI
+            If window.IsHandleCreated AndAlso reference.IsHandleCreated Then
+                SetWindowPos(window.Handle, reference.Handle, 0, 0, 0, 0, SWP_NOSIZE Or SWP_NOMOVE Or SWP_NOACTIVATE)
+            End If
         End Sub
 
         ''' <summary>Starts a window drag as if the title bar was pressed.</summary>
