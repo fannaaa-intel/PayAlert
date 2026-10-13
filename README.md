@@ -62,5 +62,6 @@ To recreate the demo data, empty the tables in phpMyAdmin (or drop `payalert_db`
 
 | Phase | Status |
 |---|---|
-| 1. Solution and database | Done: the app starts with a temporary setup-check window that tests the connection, seeds the demo data, and shows each demo payment's status |
-| 2–11 | Not started yet |
+| 1. Solution and database | Done: database scripts, connection test and demo data seeder |
+| 2. Theme, signature controls and dialogs | Done: the app currently opens a temporary component preview (its "Run setup check" button opens the Phase 1 database check) |
+| 3–11 | Not started yet |
