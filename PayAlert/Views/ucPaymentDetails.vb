@@ -1,6 +1,7 @@
 Option Strict On
 Option Explicit On
 
+Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.Windows.Forms
 Imports PayAlert.Controls
@@ -31,6 +32,9 @@ Namespace Views
         Private ReadOnly _duePhrase As New Label()
         Private ReadOnly _paidLine As New Label()
         Private ReadOnly _info As New TableLayoutPanel()
+        Private ReadOnly _history As New TransactionGrid() With {.Compact = True}
+        Private ReadOnly _historyEmpty As New EmptyState()
+        Private ReadOnly _historySummary As New Label()
 
         Public Sub New(paymentId As Integer)
             MyBase.New()
@@ -58,8 +62,8 @@ Namespace Views
             Dim layout As New TableLayoutPanel() With {.Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 2, .BackColor = Theme.AppBackground}
             layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 38))
             layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 62))
-            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 66))
-            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 34))
+            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 62))
+            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 38))
             layout.Controls.Add(BuildBalanceCard(), 0, 0)
             layout.Controls.Add(BuildInfoCard(), 1, 0)
             Dim history = BuildHistoryCard()
@@ -128,15 +132,28 @@ Namespace Views
         End Function
 
         Private Function BuildHistoryCard() As SoftCard
-            Dim card As New SoftCard() With {.Dock = DockStyle.Fill, .Margin = New Padding(0), .Padding = New Padding(20, 14, 20, 12)}
-            Dim note As New Label() With {
-                .Text = "Each recorded payment for this record (date, amount, method and note) will be listed here once Phase 6 adds Record Payment.",
-                .Font = Theme.FontBody, .ForeColor = Theme.TextMuted, .BackColor = Color.Transparent, .Dock = DockStyle.Fill}
+            Dim card As New SoftCard() With {.Dock = DockStyle.Fill, .Margin = New Padding(0), .Padding = New Padding(20, 14, 20, 10)}
+            ' Heading on the left, "2 records · ₱2,000.00 paid" on the right.
             Dim heading As New Label() With {
                 .Text = "Payment History", .Font = Theme.FontSection, .ForeColor = Theme.TextPrimary, .BackColor = Color.Transparent,
-                .Dock = DockStyle.Top, .Height = 30}
-            card.Controls.Add(note)
-            card.Controls.Add(heading)
+                .Dock = DockStyle.Left, .Width = 200, .TextAlign = ContentAlignment.MiddleLeft}
+            _historySummary.Dock = DockStyle.Fill
+            _historySummary.TextAlign = ContentAlignment.MiddleRight
+            _historySummary.Font = Theme.FontCaption
+            _historySummary.ForeColor = Theme.TextMuted
+            _historySummary.BackColor = Color.Transparent
+            Dim headRow As New Panel() With {.Dock = DockStyle.Top, .Height = 32, .BackColor = Color.Transparent}
+            headRow.Controls.Add(_historySummary)
+            headRow.Controls.Add(heading)
+
+            _history.Dock = DockStyle.Fill
+            _historyEmpty.Dock = DockStyle.Fill
+            _historyEmpty.Icon = IconKind.History
+            _historyEmpty.Compact = True
+            _historyEmpty.Visible = False
+            card.Controls.Add(_history)
+            card.Controls.Add(_historyEmpty)
+            card.Controls.Add(headRow)
             Return card
         End Function
 
@@ -144,8 +161,15 @@ Namespace Views
 
         Public Overrides Sub OnNavigatedTo()
             MyBase.OnNavigatedTo()
+            LoadPayment(fromRecord:=False)
+        End Sub
+
+        ''' <summary>Loads the payment and its history. After recording, the ring moves from the old amount instead of replaying.</summary>
+        Private Sub LoadPayment(fromRecord As Boolean)
+            Dim history As List(Of PaymentTransaction)
             Try
                 _payment = PaymentRepo.GetSummary(_paymentId, Session.CurrentUser.UserId)
+                history = TransactionRepo.GetForPayment(_paymentId, Session.CurrentUser.UserId)
             Catch ex As Exception
                 Debug.WriteLine("[ucPaymentDetails] " & ex.ToString())
                 PADialog.Error(Me, "Can't load this payment", Db.FriendlyMessageFor(ex))
@@ -156,17 +180,37 @@ Namespace Views
                 Navigator.GoBack()
                 Return
             End If
-            Fill(_payment)
+            Fill(_payment, fromRecord)
+            FillHistory(_payment, history)
         End Sub
 
-        Private Sub Fill(p As PaymentSummary)
+        Private Sub FillHistory(p As PaymentSummary, history As List(Of PaymentTransaction))
+            _history.SetRows(history)
+            Dim empty = history.Count = 0
+            _history.Visible = Not empty
+            _historyEmpty.Visible = empty
+            If empty Then
+                _historyEmpty.Title = If(p.IsReceivable, "No collections recorded yet", "No payments recorded yet")
+                _historyEmpty.Message = "Use " & _record.Text & " above for each amount, in full or in parts."
+                _historySummary.Text = ""
+            Else
+                _historySummary.Text = history.Count & If(history.Count = 1, " record", " records") & "  ·  " &
+                                       Format.Money(p.AmountPaid) & If(p.IsReceivable, " collected", " paid")
+            End If
+        End Sub
+
+        Private Sub Fill(p As PaymentSummary, Optional fromRecord As Boolean = False)
             Title = p.Name
             Subtitle = p.DirectionLabel & "  ·  " & p.CategoryName & If(p.Counterparty.Length > 0, "  ·  " & p.Counterparty, "")
             _record.Text = If(p.IsReceivable, "Record Collection", "Record Payment")
             SetHeaderActionVisible(_record, Not p.IsPaid)
 
-            _ring.SetValues(p.TotalAmount, p.AmountPaid, animate:=False)
-            _ring.Replay()
+            If fromRecord Then
+                _ring.SetValues(p.TotalAmount, p.AmountPaid, animate:=True)
+            Else
+                _ring.SetValues(p.TotalAmount, p.AmountPaid, animate:=False)
+                _ring.Replay()
+            End If
             _tag.DueDate = p.DueDate
             _tag.Status = p.Status
             _pill.Status = p.Status
@@ -179,7 +223,6 @@ Namespace Views
             _info.Controls.Clear()
             _info.RowStyles.Clear()
             _info.RowCount = 0
-            AddInfo("Direction", p.DirectionLabel)
             AddInfo(If(p.IsReceivable, "Amount collected", "Amount paid"), Format.Money(p.AmountPaid))
             AddInfo("Total amount", Format.Money(p.TotalAmount))
             AddInfo("Due date", Format.ShortDate(p.DueDate) & "  ·  " & Format.RelativeDay(p.DaysUntilDue))
@@ -194,7 +237,7 @@ Namespace Views
         Private Sub AddInfo(label As String, value As String, Optional wrap As Boolean = False)
             Dim row = _info.RowCount
             _info.RowCount = row + 1
-            _info.RowStyles.Add(If(wrap, New RowStyle(SizeType.Percent, 100), New RowStyle(SizeType.Absolute, 29)))
+            _info.RowStyles.Add(If(wrap, New RowStyle(SizeType.Percent, 100), New RowStyle(SizeType.Absolute, 28)))
             _info.Controls.Add(New Label() With {
                 .Text = label, .Font = Theme.FontBody, .ForeColor = Theme.TextMuted, .BackColor = Color.Transparent,
                 .Dock = DockStyle.Fill, .TextAlign = If(wrap, ContentAlignment.TopLeft, ContentAlignment.MiddleLeft),
@@ -209,9 +252,46 @@ Namespace Views
         ' ---------------------------------------------------------------- actions
 
         Private Sub RecordClicked(sender As Object, e As EventArgs)
-            PADialog.Info(Me, If(_payment?.IsReceivable, "Recording collections comes next", "Recording payments comes next"),
-                          "Phase 6 adds the Record Payment window: partial or full amounts, the date and method, and the history list below.",
-                          Tone.Brand)
+            If _payment Is Nothing OrElse _payment.IsPaid Then Return
+            Dim receivable = _payment.IsReceivable
+            Dim outcome = dlgRecordPayment.Run(Me, _payment)
+            If outcome Is Nothing Then Return
+
+            Select Case outcome.Status
+                Case RecordStatus.NotFound
+                    PADialog.Info(Me, "This payment isn't available", "It may have been deleted, so nothing was recorded.", Tone.Warning)
+                    Navigator.GoBack()
+                    Return
+                Case RecordStatus.AlreadyPaid
+                    PAToast.Notify(FindForm(), "Already " & If(receivable, "collected", "paid") & " in full", Tone.Neutral)
+                    LoadPayment(fromRecord:=True)
+                    Return
+            End Select
+
+            Dim p = outcome.Payment
+            Dim txn = outcome.Transaction
+            Dim lines As New List(Of String) From {
+                "Payment: " & p.Name,
+                If(receivable, "Amount received: ", "Amount paid: ") & Format.Money(txn.Amount),
+                If(receivable, "Date received: ", "Date paid: ") & Format.ShortDate(txn.PaidOn),
+                "Method: " & If(txn.Method.Length = 0, "—", txn.Method),
+                If(p.IsPaid, "Status: " & If(receivable, "Fully collected", "Paid in full"), "Balance left: " & Format.Money(p.Balance))}
+            Dim nextPayment = outcome.NextPayment
+            If nextPayment IsNot Nothing Then lines.Add("Next one due: " & Format.ShortDate(nextPayment.DueDate))
+
+            ' Show the new balance first, so the ring moves while the receipt is up.
+            _payment = p
+            Fill(p, fromRecord:=True)
+            Try
+                FillHistory(p, TransactionRepo.GetForPayment(_paymentId, Session.CurrentUser.UserId))
+            Catch ex As Exception
+                Debug.WriteLine("[ucPaymentDetails] " & ex.ToString())
+            End Try
+
+            Dim nav = Navigator
+            Dim choice = PADialog.Success(Me, If(receivable, "Collection recorded", "Payment recorded"), lines,
+                                          "Done", If(nextPayment Is Nothing, Nothing, "View Next Payment"))
+            If choice = DialogChoice.Secondary AndAlso nextPayment IsNot Nothing Then nav.Push(New ucPaymentDetails(nextPayment.PaymentId))
         End Sub
 
         Private Sub DeleteClicked(sender As Object, e As EventArgs)

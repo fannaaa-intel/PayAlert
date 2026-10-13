@@ -17,6 +17,18 @@ Namespace Dialogs
     End Enum
 
     ''' <summary>
+    ''' A form hosted inside a PADialog (see PADialog.ShowForm). The dialog keeps its primary button enabled only while
+    ''' CanSubmit is True, and closes on the primary button only when Submit returns True.
+    ''' </summary>
+    Public Interface IDialogBody
+        ReadOnly Property CanSubmit As Boolean
+        Event CanSubmitChanged As EventHandler
+        ''' <summary>Validates and saves. Returns False to keep the dialog open (show the problem inline).</summary>
+        Function Submit() As Boolean
+        Sub FocusFirstField()
+    End Interface
+
+    ''' <summary>
     ''' PayAlert's message dialog (§6B). Replaces every message box in the app.
     ''' A borderless 420px "ticket": tone strip across the top, a 48px icon badge, bold title, muted message,
     ''' and a perforated footer (notched on both sides) holding right-aligned buttons. Opens over a dim overlay
@@ -26,6 +38,7 @@ Namespace Dialogs
         Inherits Form
 
         Private Const DialogWidth As Integer = 420
+        Private Const FormDialogWidth As Integer = 540
         Private Const Pad As Integer = 24
         Private Const StripHeight As Integer = 4
         Private Const BadgeSize As Integer = 48
@@ -43,6 +56,7 @@ Namespace Dialogs
         Private ReadOnly _primary As PAButton
         Private ReadOnly _secondary As PAButton
         Private ReadOnly _focusSecondary As Boolean
+        Private ReadOnly _body As Control
         Private _choice As DialogChoice = DialogChoice.Cancel
 
         ' Layout in device pixels (dialogs are built at runtime, so they scale themselves).
@@ -100,6 +114,18 @@ Namespace Dialogs
             End Using
         End Sub
 
+        ''' <summary>
+        ''' Hosts a form (<paramref name="body"/>, a Control implementing IDialogBody, sized in device pixels) between the
+        ''' header and the footer. The primary button follows body.CanSubmit and calls body.Submit before closing.
+        ''' </summary>
+        Public Shared Function ShowForm(owner As Control, tone As Tone, icon As IconKind, title As String, message As String, body As Control,
+                                        primaryText As String, Optional secondaryText As String = "Cancel") As DialogChoice
+            If TypeOf body IsNot IDialogBody Then Throw New ArgumentException("The body must implement IDialogBody.", NameOf(body))
+            Using dlg As New PADialog(tone, icon, title, message, Nothing, primaryText, ButtonKind.Primary, secondaryText, False, body)
+                Return dlg.Run(owner)
+            End Using
+        End Function
+
         Private Shared Function DefaultIcon(tone As Tone) As IconKind
             Select Case tone
                 Case Tone.Success : Return IconKind.Check
@@ -112,8 +138,10 @@ Namespace Dialogs
         ' ================================================================ construction and layout
 
         Private Sub New(tone As Tone, icon As IconKind, title As String, message As String, detailsLines As IEnumerable(Of String),
-                        primaryText As String, primaryKind As ButtonKind, secondaryText As String, focusSecondary As Boolean)
+                        primaryText As String, primaryKind As ButtonKind, secondaryText As String, focusSecondary As Boolean,
+                        Optional body As Control = Nothing)
             _tone = tone
+            _body = body
             _icon = icon
             _title = If(title, "")
             _message = If(message, "")
@@ -149,6 +177,12 @@ Namespace Dialogs
                 AddHandler _secondary.Click, Sub(s, e) Choose(DialogChoice.Secondary)
                 Controls.Add(_secondary)
             End If
+            If _body IsNot Nothing Then
+                Controls.Add(_body)
+                Dim form = DirectCast(_body, IDialogBody)
+                _primary.Enabled = form.CanSubmit
+                AddHandler form.CanSubmitChanged, Sub(s, e) _primary.Enabled = form.CanSubmit
+            End If
 
             ComputeLayout()
         End Sub
@@ -158,7 +192,7 @@ Namespace Dialogs
         End Function
 
         Private Sub ComputeLayout()
-            Dim dialogW = Px(DialogWidth)
+            Dim dialogW = Px(If(_body Is Nothing, DialogWidth, FormDialogWidth))
             Dim p = Px(Pad)
             Dim inner = dialogW - p * 2
             Dim wrap = TextFormatFlags.WordBreak Or TextFormatFlags.NoPadding
@@ -178,6 +212,12 @@ Namespace Dialogs
                 Dim messageSize = TextRenderer.MeasureText(_message, Theme.FontBody, New Size(inner, Integer.MaxValue), wrap)
                 _messageRect = New Rectangle(p, y, inner, messageSize.Height)
                 y = _messageRect.Bottom
+            End If
+
+            If _body IsNot Nothing Then
+                y += Px(20)
+                _body.SetBounds(p, y, inner, _body.Height)
+                y = _body.Bottom
             End If
 
             If _details.Count > 0 Then
@@ -200,9 +240,10 @@ Namespace Dialogs
             End If
             ClientSize = New Size(dialogW, buttonTop + buttonHeight + Px(16))
 
-            ' Tab order: secondary (left) then primary (right), like reading order.
-            If _secondary IsNot Nothing Then _secondary.TabIndex = 0
-            _primary.TabIndex = 1
+            ' Tab order: the form's fields, then secondary (left), then primary (right), like reading order.
+            If _body IsNot Nothing Then _body.TabIndex = 0
+            If _secondary IsNot Nothing Then _secondary.TabIndex = 1
+            _primary.TabIndex = 2
 
             Using path = BuildShape(New RectangleF(0, 0, ClientSize.Width, ClientSize.Height), -1)
                 Region = New Region(path)
@@ -289,7 +330,11 @@ Namespace Dialogs
             ' The shadow window is shown before the dialog, so the dialog stays above it.
             _shadow = New ShadowWindow(AddressOf BuildShape, AddressOf PaintFace, Px(ShadowSpread), Px(6))
             _shadow.Show(Owner)
-            ActiveControl = If(_focusSecondary, _secondary, _primary)
+            If _body IsNot Nothing Then
+                DirectCast(_body, IDialogBody).FocusFirstField()
+            Else
+                ActiveControl = If(_focusSecondary, _secondary, _primary)
+            End If
         End Sub
 
         Protected Overrides Sub OnShown(e As EventArgs)
@@ -340,6 +385,7 @@ Namespace Dialogs
 
         Private Sub Choose(choice As DialogChoice)
             If _phase = 2 Then Return
+            If choice = DialogChoice.Primary AndAlso _body IsNot Nothing AndAlso Not DirectCast(_body, IDialogBody).Submit() Then Return
             _choice = choice
             Close()
         End Sub

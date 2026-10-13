@@ -3,6 +3,7 @@ Option Explicit On
 
 Imports System.Collections.Generic
 Imports System.Data
+Imports MySql.Data.MySqlClient
 Imports PayAlert.Models
 
 Namespace Data
@@ -33,7 +34,14 @@ Namespace Data
 
         ''' <summary>One payment with its calculated amounts, or Nothing if it doesn't exist, was deleted, or isn't the user's.</summary>
         Public Shared Function GetSummary(paymentId As Integer, userId As Integer) As PaymentSummary
-            Dim table = Db.Query(SummaryColumns & "WHERE payment_id = @id AND user_id = @user",
+            Using conn = Db.OpenConnection()
+                Return GetSummary(conn, Nothing, paymentId, userId)
+            End Using
+        End Function
+
+        ''' <summary>Same as GetSummary, inside the caller's connection and transaction.</summary>
+        Public Shared Function GetSummary(conn As MySqlConnection, tx As MySqlTransaction, paymentId As Integer, userId As Integer) As PaymentSummary
+            Dim table = Db.Query(conn, tx, SummaryColumns & "WHERE payment_id = @id AND user_id = @user",
                                  Db.P("@id", paymentId), Db.P("@user", userId))
             Return If(table.Rows.Count = 0, Nothing, Map(table.Rows(0)))
         End Function
@@ -41,12 +49,27 @@ Namespace Data
         ''' <summary>Creates a payment for payment.UserId and returns its new id.</summary>
         Public Shared Function Insert(payment As Payment) As Integer
             Using conn = Db.OpenConnection()
-                Return Db.Insert(conn, Nothing,
-                    "INSERT INTO payments (user_id, parent_payment_id, name, direction, counterparty, category_id, total_amount, " &
-                    "due_date, reminder_days, is_recurring, recurrence, notes) " &
-                    "VALUES (@user, @parent, @name, @direction, @person, @category, @total, @due, @remind, @recurring, @recurrence, @notes)",
-                    ParametersFor(payment, includeUser:=True))
+                Return Insert(conn, Nothing, payment)
             End Using
+        End Function
+
+        ''' <summary>Same as Insert, inside the caller's connection and transaction.</summary>
+        Public Shared Function Insert(conn As MySqlConnection, tx As MySqlTransaction, payment As Payment) As Integer
+            Return Db.Insert(conn, tx,
+                "INSERT INTO payments (user_id, parent_payment_id, name, direction, counterparty, category_id, total_amount, " &
+                "due_date, reminder_days, is_recurring, recurrence, notes) " &
+                "VALUES (@user, @parent, @name, @direction, @person, @category, @total, @due, @remind, @recurring, @recurrence, @notes)",
+                ParametersFor(payment, includeUser:=True))
+        End Function
+
+        ''' <summary>
+        ''' The id of the payment created after this one in its recurring chain, or Nothing. Deleted ones count too,
+        ''' so a next payment the user deleted is never created again.
+        ''' </summary>
+        Public Shared Function GetNextInChain(conn As MySqlConnection, tx As MySqlTransaction, paymentId As Integer) As Integer?
+            Dim id = Db.ExecuteScalar(conn, tx, "SELECT payment_id FROM payments WHERE parent_payment_id = @id ORDER BY payment_id LIMIT 1",
+                                      Db.P("@id", paymentId))
+            Return If(id Is Nothing OrElse TypeOf id Is DBNull, CType(Nothing, Integer?), Convert.ToInt32(id))
         End Function
 
         ''' <summary>Saves the editable fields. Returns False if the payment no longer exists for this user.</summary>
@@ -65,8 +88,8 @@ Namespace Data
                                       Db.P("@id", paymentId), Db.P("@user", userId)) > 0
         End Function
 
-        Private Shared Function ParametersFor(p As Payment, includeUser As Boolean, Optional includeId As Boolean = False) As MySql.Data.MySqlClient.MySqlParameter()
-            Dim list As New List(Of MySql.Data.MySqlClient.MySqlParameter) From {
+        Private Shared Function ParametersFor(p As Payment, includeUser As Boolean, Optional includeId As Boolean = False) As MySqlParameter()
+            Dim list As New List(Of MySqlParameter) From {
                 Db.P("@parent", If(p.ParentPaymentId.HasValue, CObj(p.ParentPaymentId.Value), Nothing)),
                 Db.P("@name", p.Name.Trim()),
                 Db.P("@direction", p.Direction),
