@@ -3,7 +3,7 @@
 The 11 build phases from [PLAN.md](../PLAN.md) §9, with status and a test checklist for each.
 Rules: one phase at a time. After each phase, build, test, then commit as `Phase N: <summary>` once the user confirms. **Push only when the user says "push".**
 
-_Last updated: 2026-10-14 (session 2: Phases 6, 7 and 8 done)_
+_Last updated: 2026-10-14 (session 2: Phases 6-9 done)_
 
 | # | Work order | Status | Commit |
 |---|---|---|---|
@@ -15,8 +15,8 @@ _Last updated: 2026-10-14 (session 2: Phases 6, 7 and 8 done)_
 | 6 | Transactions, history and recurrence | ✅ Done | `005b9a7` |
 | 7 | Dashboard | ✅ Done | `e4ab477` |
 | 8 | Notifications | ✅ Done | `57c3145` |
-| 9 | Settings and profile | ⏳ **Next** | |
-| 10 | Admin | ⏳ | |
+| 9 | Settings and profile | ✅ Done | `279c927` |
+| 10 | Admin | ⏳ **Next** | |
 | 11 | Polish | ⏳ | |
 
 Nothing has been pushed to GitHub yet.
@@ -86,14 +86,14 @@ Done when: demo data produces the expected alerts, with no duplicates.
 - [x] ucNotifications: cards newest first, colored dot, title, message, relative time; unread cards BrandSoft; click marks read and opens the payment; Mark all as read (toast)
 - [x] Sidebar badge: `frmMain.SetUnreadCount(n)` already exists
 
-## 9. Settings and profile ⏳ NEXT
+## 9. Settings and profile ✅
 Done when: all settings save and reload.
-- [ ] `SettingsRepo` (Get already exists from Phase 8; add Save); ucSettings cards: Account (Profile, Change Password), Notifications (toggle, default reminder 1/3/7), Preferences (Currency PHP, read-only), Log out
-- [ ] ucProfile: edit full name and email (email stays unique); refresh the sidebar user block
-- [ ] dlgChangePassword: current, new (8+ characters), confirm
-- [ ] Payment editor uses the user's default reminder (it currently starts at 3 days)
+- [x] `SettingsRepo` (Get already exists from Phase 8; add Save); ucSettings cards: Account (Profile, Change Password), Notifications (toggle, default reminder 1/3/7), Preferences (Currency PHP, read-only), Log out
+- [x] ucProfile: edit full name and email (email stays unique); refresh the sidebar user block
+- [x] dlgChangePassword: current, new (8+ characters), confirm
+- [x] Payment editor uses the user's default reminder (it currently starts at 3 days)
 
-## 10. Admin ⏳
+## 10. Admin ⏳ NEXT
 Done when: the admin can deactivate or reset a user, and a regular user can't see the Admin menu.
 - [ ] `AdminRepo`; ucAdminDashboard cards: Total Users, Active Users, Total Payments, Overdue Payments
 - [ ] ucAdminUsers grid: Name, Email, Role, Status, Created; Activate/Deactivate (not yourself) with a confirm; Reset Password shows a temporary password once
