@@ -298,40 +298,8 @@ Namespace Controls
         End Sub
 
         Private Sub PaintHeader(e As DataGridViewCellPaintingEventArgs)
-            Dim g = e.Graphics
-            Using fill As New SolidBrush(Theme.Surface)
-                g.FillRectangle(fill, e.CellBounds)
-            End Using
-            Using rule As New Pen(Theme.Border)
-                g.DrawLine(rule, e.CellBounds.Left, e.CellBounds.Bottom - 1, e.CellBounds.Right, e.CellBounds.Bottom - 1)
-            End Using
             Dim column = Columns(e.ColumnIndex)
-            Dim rightAligned = column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-            Dim pad = CInt(If(e.ColumnIndex = 0, 14, 10) * S)
-            Dim r = New Rectangle(e.CellBounds.X + pad, e.CellBounds.Y, e.CellBounds.Width - pad * 2, e.CellBounds.Height)
-            Dim sorted = column.Name = _sortColumn
-            Dim flags = TextFormatFlags.NoPadding Or TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.EndEllipsis
-            ' Measure without EndEllipsis: with an empty proposed size it would shrink the text to "...".
-            Dim textWidth = Math.Min(r.Width - CInt(18 * S), TextRenderer.MeasureText(g, column.HeaderText, Theme.FontCaptionBold, Size.Empty,
-                                                                                     TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine).Width)
-            Dim textX = If(rightAligned, r.Right - textWidth - If(sorted, CInt(16 * S), 0), r.X)
-            TextRenderer.DrawText(g, column.HeaderText, Theme.FontCaptionBold, New Rectangle(textX, r.Y, textWidth + 2, r.Height),
-                                  If(sorted, Theme.TextPrimary, Theme.TextMuted), flags)
-            If sorted Then
-                Gfx.HighQuality(g)
-                Dim arrow = 12 * S
-                Dim ar As New RectangleF(textX + textWidth + 4 * S, r.Y + (r.Height - arrow) / 2.0F, arrow, arrow)
-                If _sortAscending Then
-                    ' Draw an up chevron by flipping the down chevron around its center.
-                    Dim state = g.Save()
-                    g.TranslateTransform(ar.X + arrow / 2, ar.Y + arrow / 2)
-                    g.RotateTransform(180)
-                    Icons.Draw(g, IconKind.ChevronDown, New RectangleF(-arrow / 2, -arrow / 2, arrow, arrow), Theme.Brand, 1.8F * S)
-                    g.Restore(state)
-                Else
-                    Icons.Draw(g, IconKind.ChevronDown, ar, Theme.Brand, 1.8F * S)
-                End If
-            End If
+            RowPainter.PaintHeader(e, column, column.Name = _sortColumn, _sortAscending, S)
         End Sub
 
         Private Sub PaintCell(e As DataGridViewCellPaintingEventArgs)

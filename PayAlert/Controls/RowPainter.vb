@@ -53,6 +53,45 @@ Namespace Controls
             TextRenderer.DrawText(g, month, Theme.FontSmallCaps, New Rectangle(textX + dayWidth + CInt(3 * s), CInt(r.Y + 1 * s), monthWidth + 2, CInt(h)), Theme.TextMuted, flags)
         End Sub
 
+        ''' <summary>
+        ''' A grid column header: white, bottom rule, muted bold caption (dark when sorted) and a Brand chevron
+        ''' showing the sort direction. Right-aligned columns keep their caption on the right.
+        ''' </summary>
+        Public Shared Sub PaintHeader(e As DataGridViewCellPaintingEventArgs, column As DataGridViewColumn, sorted As Boolean,
+                                      ascending As Boolean, s As Single)
+            Dim g = e.Graphics
+            Using fill As New SolidBrush(Theme.Surface)
+                g.FillRectangle(fill, e.CellBounds)
+            End Using
+            Using rule As New Pen(Theme.Border)
+                g.DrawLine(rule, e.CellBounds.Left, e.CellBounds.Bottom - 1, e.CellBounds.Right, e.CellBounds.Bottom - 1)
+            End Using
+            Dim rightAligned = column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+            Dim pad = CInt(If(e.ColumnIndex = 0, 14, 10) * s)
+            Dim r = New Rectangle(e.CellBounds.X + pad, e.CellBounds.Y, e.CellBounds.Width - pad * 2, e.CellBounds.Height)
+            Dim flags = TextFormatFlags.NoPadding Or TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.EndEllipsis
+            ' Measure without EndEllipsis: with an empty proposed size it would shrink the text to "...".
+            Dim textWidth = Math.Min(r.Width - CInt(18 * s), TextRenderer.MeasureText(g, column.HeaderText, Theme.FontCaptionBold, Size.Empty,
+                                                                                     TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine).Width)
+            Dim textX = If(rightAligned, r.Right - textWidth - If(sorted, CInt(16 * s), 0), r.X)
+            TextRenderer.DrawText(g, column.HeaderText, Theme.FontCaptionBold, New Rectangle(textX, r.Y, textWidth + 2, r.Height),
+                                  If(sorted, Theme.TextPrimary, Theme.TextMuted), flags)
+            If Not sorted Then Return
+            Gfx.HighQuality(g)
+            Dim arrow = 12 * s
+            Dim ar As New RectangleF(textX + textWidth + 4 * s, r.Y + (r.Height - arrow) / 2.0F, arrow, arrow)
+            If ascending Then
+                ' An up chevron: the down chevron flipped around its center.
+                Dim state = g.Save()
+                g.TranslateTransform(ar.X + arrow / 2, ar.Y + arrow / 2)
+                g.RotateTransform(180)
+                Icons.Draw(g, IconKind.ChevronDown, New RectangleF(-arrow / 2, -arrow / 2, arrow, arrow), Theme.Brand, 1.8F * s)
+                g.Restore(state)
+            Else
+                Icons.Draw(g, IconKind.ChevronDown, ar, Theme.Brand, 1.8F * s)
+            End If
+        End Sub
+
         ''' <summary>Width the status pill needs.</summary>
         Public Shared Function StatusPillWidth(g As Graphics, status As String, s As Single) As Single
             Dim flags = TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine
@@ -61,18 +100,22 @@ Namespace Controls
 
         ''' <summary>Status pill starting at r.X, vertically centered in r.</summary>
         Public Shared Sub PaintStatusPill(g As Graphics, r As Rectangle, status As String, s As Single)
+            PaintPill(g, r, status, Theme.StatusText(status), Theme.StatusSoft(status), s)
+        End Sub
+
+        ''' <summary>A dot-and-label pill in the given colors, starting at r.X, vertically centered in r.</summary>
+        Public Shared Sub PaintPill(g As Graphics, r As Rectangle, text As String, fore As Color, soft As Color, s As Single)
             Gfx.HighQuality(g)
             Dim flags = TextFormatFlags.NoPadding Or TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine
-            Dim textWidth = TextRenderer.MeasureText(g, status, Theme.FontCaptionBold, Size.Empty, flags).Width
+            Dim textWidth = TextRenderer.MeasureText(g, text, Theme.FontCaptionBold, Size.Empty, flags).Width
             Dim h = 24 * s
             Dim pill As New RectangleF(r.X, r.Y + (r.Height - h) / 2.0F, textWidth + 32 * s, h)
-            Gfx.FillRounded(g, pill, h / 2.0F, Theme.StatusSoft(status))
+            Gfx.FillRounded(g, pill, h / 2.0F, soft)
             Dim dot = 6 * s
-            Using brush As New SolidBrush(Theme.StatusText(status))
+            Using brush As New SolidBrush(fore)
                 g.FillEllipse(brush, pill.X + 10 * s, pill.Y + (h - dot) / 2.0F, dot, dot)
             End Using
-            TextRenderer.DrawText(g, status, Theme.FontCaptionBold, New Rectangle(CInt(pill.X + 22 * s), CInt(pill.Y), textWidth + 4, CInt(h)),
-                                  Theme.StatusText(status), flags)
+            TextRenderer.DrawText(g, text, Theme.FontCaptionBold, New Rectangle(CInt(pill.X + 22 * s), CInt(pill.Y), textWidth + 4, CInt(h)), fore, flags)
         End Sub
 
     End Class
