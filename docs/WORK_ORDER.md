@@ -3,7 +3,7 @@
 The 11 build phases from [PLAN.md](../PLAN.md) §9, with status and a test checklist for each.
 Rules: one phase at a time. After each phase, build, test, then commit as `Phase N: <summary>` once the user confirms. **Push only when the user says "push".**
 
-_Last updated: 2026-10-13 (end of session 1)_
+_Last updated: 2026-10-14 (session 2: Phase 6 done)_
 
 | # | Work order | Status | Commit |
 |---|---|---|---|
@@ -12,8 +12,8 @@ _Last updated: 2026-10-13 (end of session 1)_
 | 3 | Auth (login, register) | ✅ Done | `416eca9` |
 | 4 | Main window and navigation | ✅ Done | `9b649a6` |
 | 5 | Payments (list, add/edit, details, delete) | ✅ Done | `77cbf80` |
-| 6 | Transactions, history and recurrence | ⏳ **Next** | |
-| 7 | Dashboard | ⏳ | |
+| 6 | Transactions, history and recurrence | ✅ Done | `005b9a7` |
+| 7 | Dashboard | ⏳ **Next** | |
 | 8 | Notifications | ⏳ | |
 | 9 | Settings and profile | ⏳ | |
 | 10 | Admin | ⏳ | |
@@ -61,18 +61,18 @@ Done when: full add/view/edit/delete works and the status pills are correct.
 - [x] Success dialog with View Payment / Back to Dashboard
 - [x] Details: balance ring, due tag, status, info rows; Delete with red confirm (soft delete)
 
-## 6. Transactions, history and recurrence ⏳ NEXT
+## 6. Transactions, history and recurrence ✅
 Done when: partial and full payments update the balance and status; recurring payments create the next one; history totals are correct.
-- [ ] `TransactionRepo`: add a transaction, list one payment's transactions, list all of a user's transactions with filters
-- [ ] `dlgRecordPayment` (styled like PADialog): Amount (defaults to the full balance; > 0 and ≤ balance), Date paid (defaults to today), Method (editable dropdown: Cash, E-wallet, Bank Transfer, Card, Other), Note. Title "Record Collection" for receivables.
-- [ ] Wire the Record Payment button on ucPaymentDetails (it currently shows a "comes next" message)
-- [ ] Payment History list on ucPaymentDetails (replaces the placeholder card): Date, Amount, Method, Note
-- [ ] `RecurrenceService`: when a recurring payment becomes fully Paid, create the next one (due + 1 week or + 1 month) with `parent_payment_id`
-- [ ] Success dialog "Payment recorded"
-- [ ] `ucHistory`: all transactions (Date, Payment, Direction, Amount, Method, Note); filters From/To, direction and search; footer **Total Paid** (payables) and **Total Collected** (receivables)
-- [ ] Test: record ₱1,000 on Apartment Rent (status stays Partially Paid), then the rest (status Paid, Record button hidden); record the Streaming Plan in full and check that next month's appears; check that the History totals add up
+- [x] `TransactionRepo`: add a transaction, list one payment's transactions, list all of a user's transactions with filters
+- [x] `dlgRecordPayment` (styled like PADialog): Amount (defaults to the full balance; > 0 and ≤ balance), Date paid (defaults to today), Method (editable dropdown: Cash, E-wallet, Bank Transfer, Card, Other), Note. Title "Record Collection" for receivables.
+- [x] Wire the Record Payment button on ucPaymentDetails (it currently shows a "comes next" message)
+- [x] Payment History list on ucPaymentDetails (replaces the placeholder card): Date, Amount, Method, Note
+- [x] `RecurrenceService`: when a recurring payment becomes fully Paid, create the next one (due + 1 week or + 1 month) with `parent_payment_id`
+- [x] Success dialog "Payment recorded"
+- [x] `ucHistory`: all transactions (Date, Payment, Direction, Amount, Method, Note); filters From/To, direction and search; footer **Total Paid** (payables) and **Total Collected** (receivables)
+- [x] Test: record ₱1,000 on Apartment Rent (status stays Partially Paid), then the rest (status Paid, Record button hidden); record the Streaming Plan in full and check that next month's appears; check that the History totals add up
 
-## 7. Dashboard ⏳
+## 7. Dashboard ⏳ NEXT
 Done when: numbers match the Payments screen.
 - [ ] Greeting with first name and date (already in the placeholder)
 - [ ] Four SummaryCards: Due in 7 days, Due Tomorrow, Overdue (red), To Collect; clicking opens Payments filtered (`New ucPayments(status, direction)` already accepts filters)

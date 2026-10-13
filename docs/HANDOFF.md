@@ -1,11 +1,11 @@
 # PayAlert: Session Hand-off
 
-_Written at the end of session 1 (2026-10-13). Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
+_Updated in session 2 (2026-10-14), after Phase 6. Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
 
 ## Where we stopped
-- Phases 1–5 are done and committed on `main` (last commit `77cbf80`, "Phase 5: payments list, add/edit, details and delete").
+- Phases 1–6 are done and committed on `main` (Phase 6 = `005b9a7`, "Phase 6: record payments, history and recurring payments").
 - **Nothing is pushed.** The remote `origin` is https://github.com/fannaaa-intel/PayAlert.git. Push only when the user says "push".
-- **Next: Phase 6** (Record Payment, payment history, ucHistory, RecurrenceService). The checklist is in WORK_ORDER.md.
+- **Next: Phase 7** (Dashboard). The checklist is in WORK_ORDER.md.
 
 ## How the user works
 - One phase at a time. Build, test, show the result, and wait for the user's OK before committing or starting the next phase.
@@ -26,16 +26,21 @@ Program.vb           AppFlow (ApplicationContext): frmLogin <-> frmRegister -> f
 Forms/               PAWindow (borderless base, rounded + layered shadow) -> AuthWindow -> frmLogin, frmRegister
                      frmMain (sidebar + content host driven by Navigator)
 Views/               PAView base (header band, Body panel, Back button, AddHeaderAction/SetHeaderActionVisible)
-                     ucPayments, ucPaymentEditor, ucPaymentDetails = real; the others are placeholders (AddPlaceholder)
+                     ucPayments, ucPaymentEditor, ucPaymentDetails, ucHistory = real; the others are placeholders (AddPlaceholder)
 Controls/            PAControl base; buttons; SoftCard; DueTag; BalanceRing; StatusPill; SummaryCard; SidebarButton;
                      PATextBox (icon, password eye, multiline); PesoTextBox; PASelect + SelectList; PADatePicker + CalendarPanel;
                      PopupHost (ToolStripDropDown); SegmentedControl; StatusTabs; PaymentGrid (custom-drawn DataGridView);
-                     EmptyState; InlineMessage; PageHeader; ChromeButton; AuthArt
-Dialogs/             PADialog (Confirm/Info/Success/Error), PAToast.Notify, DimOverlay, ShadowWindow, Native (Win32)
-Data/                Db (parameterized helpers, FriendlyMessageFor), UserRepo, CategoryRepo, PaymentRepo
-Services/            Session, AuthService (BCrypt), Navigator, DemoDataSeeder, Format (Money, ShortDate, DuePhrase, RelativeDay)
+                     TransactionGrid (same style; Compact mode for the details card); EmptyState (Compact mode); InlineMessage;
+                     PageHeader; ChromeButton; AuthArt
+Dialogs/             PADialog (Confirm/Info/Success/Error, and ShowForm to host a form body implementing IDialogBody),
+                     dlgRecordPayment (an IDialogBody; reuse the same pattern for dlgChangePassword), PAToast.Notify,
+                     DimOverlay, ShadowWindow, Native (Win32)
+Data/                Db (parameterized helpers, FriendlyMessageFor), UserRepo, CategoryRepo, PaymentRepo, TransactionRepo
+Services/            Session, AuthService (BCrypt), Navigator, DemoDataSeeder, Format (Money, ShortDate, DuePhrase, RelativeDay),
+                     TransactionService.Record (one DB transaction: lock payment row, check balance, insert, then
+                     RecurrenceService.CreateNextIfPaid), RecurrenceService (NextDueDate, no duplicate children)
 Theme/               Theme (tokens, fonts, Px), Gfx (rounded/notched paths, shadow, logo mark), Icons (GDI+ line icons), AppIcon
-Models/              User, Payment, PaymentSummary (row of v_payment_summary), Category
+Models/              User, Payment, PaymentSummary (row of v_payment_summary), Category, PaymentTransaction
 ```
 - Navigation: `Navigator.ShowRoot(view)` for sidebar sections, `Push(view)` for inner screens, `GoBack()`, `BackToRoot()`. Views reload their data in `OnNavigatedTo()`. Screens left behind are disposed through BeginInvoke.
 - All reads go through `v_payment_summary`, and every query filters by `Session.CurrentUser.UserId`.
@@ -71,14 +76,13 @@ Models/              User, Payment, PaymentSummary (row of v_payment_summary), C
   - set `Db._connectionString` by reflection to the 3307 server
   - seed, then `AuthService.Login` + `Session.SignIn`
   - create forms at (-5000, -5000) and render them with `DrawToBitmap` (PrintWindow is unreliable offscreen)
-  - answer PADialogs with a WinForms Timer that calls the private `Choose(DialogChoice)`
+  - answer PADialogs with a WinForms Timer that calls the private `Choose(DialogChoice)`; for form dialogs, set the body's
+    fields first (the queued answer can be a scriptblock that gets the dialog and its `_body`). A form that refuses to
+    close must be cancelled by the robot, or the harness hangs.
   - pass `.psobject.BaseObject` when giving objects to reflection calls
 - Rule checks to run before finishing each phase: no `MessageBox`; no `New ComboBox/DateTimePicker/Button(`; no SQL outside `Data/` (and the seeder); `Option Strict On` + `Option Explicit On` in every file; no hard-coded colors outside Theme.vb; no third-party brand names.
 
-## Next steps (Phase 6)
-1. `Data/TransactionRepo.vb` and a `Models/PaymentTransaction.vb` model.
-2. `Dialogs/dlgRecordPayment.vb`: reuse PADialog's look (tone strip, badge, notched footer, overlay, fade). The simplest way is to generalise PADialog so it can host a body panel. Fields: PesoTextBox amount (default = balance, ≤ balance), PADatePicker (today), PASelect for the method (needs an editable/"Other" option), PATextBox note.
-3. In `ucPaymentDetails`: replace `RecordClicked` and the History placeholder card with the real list (a small styled grid or rows).
-4. `Services/RecurrenceService.vb`: call it right after a transaction makes the balance 0 on a recurring payment.
-5. `Views/ucHistory.vb`: replace the placeholder.
-6. Test on the throwaway database, show the user, and commit `Phase 6: ...` after they confirm.
+## Next steps (Phase 7)
+1. `ucDashboard`: greeting (already there), four SummaryCards (Due in 7 days, Due Tomorrow, Overdue, To Collect) that open `New ucPayments(status, direction)`.
+2. Totals line "Total I Owe · Total Owed to Me" with a BalanceRing on the totals card; Upcoming Payments (next 5 unpaid) with DueTag + StatusPill.
+3. Empty state when the user has no payments. Test that the numbers match the Payments screen, show the user, commit `Phase 7: ...` after they confirm.
