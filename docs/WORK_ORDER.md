@@ -3,7 +3,7 @@
 The 11 build phases from [PLAN.md](../PLAN.md) §9, with status and a test checklist for each.
 Rules: one phase at a time. After each phase, build, test, then commit as `Phase N: <summary>` once the user confirms. **Push only when the user says "push".**
 
-_Last updated: 2026-10-14 (session 2: Phases 6-9 done)_
+_Last updated: 2026-10-14 (session 2: Phases 6-10 done)_
 
 | # | Work order | Status | Commit |
 |---|---|---|---|
@@ -16,8 +16,8 @@ _Last updated: 2026-10-14 (session 2: Phases 6-9 done)_
 | 7 | Dashboard | ✅ Done | `e4ab477` |
 | 8 | Notifications | ✅ Done | `57c3145` |
 | 9 | Settings and profile | ✅ Done | `279c927` |
-| 10 | Admin | ⏳ **Next** | |
-| 11 | Polish | ⏳ | |
+| 10 | Admin | ✅ Done | `5528c33` |
+| 11 | Polish | ⏳ **Next** | |
 
 Nothing has been pushed to GitHub yet.
 
@@ -93,12 +93,12 @@ Done when: all settings save and reload.
 - [x] dlgChangePassword: current, new (8+ characters), confirm
 - [x] Payment editor uses the user's default reminder (it currently starts at 3 days)
 
-## 10. Admin ⏳ NEXT
+## 10. Admin ✅
 Done when: the admin can deactivate or reset a user, and a regular user can't see the Admin menu.
-- [ ] `AdminRepo`; ucAdminDashboard cards: Total Users, Active Users, Total Payments, Overdue Payments
-- [ ] ucAdminUsers grid: Name, Email, Role, Status, Created; Activate/Deactivate (not yourself) with a confirm; Reset Password shows a temporary password once
+- [x] `AdminRepo`; ucAdminDashboard cards: Total Users, Active Users, Total Payments, Overdue Payments
+- [x] ucAdminUsers grid: Name, Email, Role, Status, Created; Activate/Deactivate (not yourself) with a confirm; Reset Password shows a temporary password once
 
-## 11. Polish ⏳
+## 11. Polish ⏳ NEXT
 Done when: full walkthrough with no crashes; every screen matches §6, §6A and §6B; no `MessageBox`; no brand names.
 - [ ] Empty states, tab order, Enter/Esc everywhere, validation messages, consistent spacing
 - [ ] Check at 150% display scaling (the client PC); fix anything cut off

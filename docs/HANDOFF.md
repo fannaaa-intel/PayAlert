@@ -1,11 +1,11 @@
 # PayAlert: Session Hand-off
 
-_Updated in session 2 (2026-10-14), after Phase 9. Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
+_Updated in session 2 (2026-10-14), after Phase 10. Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
 
 ## Where we stopped
-- Phases 1–9 are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477`, Phase 8 = `57c3145`, Phase 9 = `279c927` "Phase 9: settings and profile").
+- Phases 1–10 are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477`, Phase 8 = `57c3145`, Phase 9 = `279c927`, Phase 10 = `5528c33` "Phase 10: admin").
 - **Nothing is pushed.** The remote `origin` is https://github.com/fannaaa-intel/PayAlert.git. Push only when the user says "push".
-- **Next: Phase 10** (Admin). The checklist is in WORK_ORDER.md.
+- **Next: Phase 11** (Polish), the last phase. The checklist is in WORK_ORDER.md.
 
 ## How the user works
 - One phase at a time. Build, test, show the result, and wait for the user's OK before committing or starting the next phase.
@@ -26,23 +26,24 @@ Program.vb           AppFlow (ApplicationContext): frmLogin <-> frmRegister -> f
 Forms/               PAWindow (borderless base, rounded + layered shadow) -> AuthWindow -> frmLogin, frmRegister
                      frmMain (sidebar + content host driven by Navigator)
 Views/               PAView base (header band, Body panel, Back button, AddHeaderAction/SetHeaderActionVisible)
-                     ucDashboard, ucNotifications, ucSettings, ucProfile, ucPayments (+ DueWindow chip filter; InWindow shared with the dashboard), ucPaymentEditor, ucPaymentDetails, ucHistory = real; the others are placeholders (AddPlaceholder)
+                     ucDashboard, ucNotifications, ucSettings, ucProfile, ucAdminDashboard, ucAdminUsers, ucPayments (+ DueWindow chip filter; InWindow shared with the dashboard), ucPaymentEditor, ucPaymentDetails, ucHistory = real; the others are placeholders (AddPlaceholder)
 Controls/            PAControl base; buttons; SoftCard; DueTag; BalanceRing; StatusPill; SummaryCard; SidebarButton;
                      PATextBox (icon, password eye, multiline); PesoTextBox; PASelect + SelectList; PADatePicker + CalendarPanel;
                      PopupHost (ToolStripDropDown); SegmentedControl; StatusTabs; PaymentGrid (custom-drawn DataGridView);
-                     TransactionGrid (same style; Compact mode for the details card); UpcomingList; SettingRow (icon + title + description + trailing control or chevron); ToggleSwitch; NotificationList (day-grouped cards, wheel scroll); RowPainter (shared compact due tag + status pill); EmptyState (Compact mode); InlineMessage;
+                     TransactionGrid (same style; Compact mode for the details card); UpcomingList; SettingRow (icon + title + description + trailing control or chevron); ToggleSwitch; NotificationList (day-grouped cards, wheel scroll); RowPainter (shared compact due tag, pills, sortable grid header); UserGrid; EmptyState (Compact mode); InlineMessage;
                      PageHeader; ChromeButton; AuthArt
 Dialogs/             PADialog (Confirm/Info/Success/Error, and ShowForm to host a form body implementing IDialogBody),
                      dlgRecordPayment and dlgChangePassword (IDialogBody forms), PAToast.Notify,
                      DimOverlay, ShadowWindow, Native (Win32)
 Data/                Db (parameterized helpers, FriendlyMessageFor), UserRepo, CategoryRepo, PaymentRepo, TransactionRepo,
-                     NotificationRepo (INSERT IGNORE), SettingsRepo (Get/Save); UserRepo has FindById, UpdateProfile, UpdatePasswordHash
+                     NotificationRepo (INSERT IGNORE), SettingsRepo (Get/Save), AdminRepo (stats, users, SetActive); UserRepo has FindById, UpdateProfile, UpdatePasswordHash
 Services/            Session, AuthService (BCrypt), Navigator, DemoDataSeeder, Format (Money, ShortDate, DuePhrase, RelativeDay),
                      TransactionService.Record (one DB transaction: lock payment row, check balance, insert, then
                      RecurrenceService.CreateNextIfPaid), RecurrenceService (NextDueDate, no duplicate children),
+                     AdminService (admin-only, never on your own account; temporary passwords via RandomNumberGenerator),
                      ReminderService (one most-specific reminder per unpaid payment per day; frmMain runs it at login + 5-min timer)
 Theme/               Theme (tokens, fonts, Px), Gfx (rounded/notched paths, shadow, logo mark), Icons (GDI+ line icons), AppIcon
-Models/              User, Payment, PaymentSummary (row of v_payment_summary), Category, PaymentTransaction, Notification, UserSettings
+Models/              User, Payment, PaymentSummary (row of v_payment_summary), Category, PaymentTransaction, Notification, UserSettings, UserSummary, AdminStats
 ```
 - Navigation: `Navigator.ShowRoot(view)` for sidebar sections, `Push(view)` for inner screens, `GoBack()`, `BackToRoot()`. Views reload their data in `OnNavigatedTo()`. Screens left behind are disposed through BeginInvoke.
 - All reads go through `v_payment_summary`, and every query filters by `Session.CurrentUser.UserId`.
@@ -84,7 +85,11 @@ Models/              User, Payment, PaymentSummary (row of v_payment_summary), C
   - pass `.psobject.BaseObject` when giving objects to reflection calls
 - Rule checks to run before finishing each phase: no `MessageBox`; no `New ComboBox/DateTimePicker/Button(`; no SQL outside `Data/` (and the seeder); `Option Strict On` + `Option Explicit On` in every file; no hard-coded colors outside Theme.vb; no third-party brand names.
 
-## Next steps (Phase 10)
-1. `AdminRepo`: counts (total users, active users, total payments, overdue payments) and the user list.
-2. ucAdminDashboard cards; ucAdminUsers grid (Name, Email, Role, Status, Created) with Activate/Deactivate (never yourself, confirm first) and Reset Password (temporary password shown once).
-3. Check that a regular user never sees the Admin item. Test, show the user, commit after they confirm.
+## Next steps (Phase 11: Polish)
+1. Full walkthrough of every screen: empty states, tab order, Enter/Esc, validation messages, spacing.
+2. Check at 150% display scaling (the client PC) and fix anything cut off.
+3. Final README; exe icon file. Search for MessageBox and third-party brand names. Show the user and commit `Phase 11: ...` after they confirm.
+
+## Testing tip (session 2)
+If the user has PayAlert open, `dotnet build` can't overwrite the exe. Don't close their window: build into the scratchpad with
+`dotnet build PayAlert/PayAlert.vbproj -o <scratch>/build` and point the harness at that copy.
