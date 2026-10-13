@@ -3,7 +3,6 @@ Option Explicit On
 
 Imports System.Collections.Generic
 Imports System.Drawing
-Imports System.Globalization
 Imports System.Linq
 Imports System.Windows.Forms
 Imports PayAlert.Models
@@ -35,8 +34,6 @@ Namespace Controls
 
         ''' <summary>Raised on double-click or Enter.</summary>
         Public Event PaymentActivated As EventHandler(Of PaymentSummary)
-
-        Private Shared ReadOnly DayFont As New Font(Theme.FontFamilyName, 12.0F, FontStyle.Bold)
 
         Public Sub New()
             DoubleBuffered = True
@@ -330,7 +327,7 @@ Namespace Controls
             Dim flags = TextFormatFlags.NoPadding Or TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.EndEllipsis
             Select Case column
                 Case ColDue
-                    PaintDueTag(g, e.CellBounds, p)
+                    RowPainter.PaintDueTag(g, e.CellBounds.X + 12 * S, e.CellBounds, p.DueDate, p.Status, S)
                 Case ColName
                     Dim nameHeight = TextRenderer.MeasureText(g, "Ag", Theme.FontBodyBold, Size.Empty, flags).Height + CInt(2 * S)
                     Dim top = r.Y + (r.Height - nameHeight - CInt(18 * S)) \ 2
@@ -349,53 +346,8 @@ Namespace Controls
                 Case ColBalance
                     TextRenderer.DrawText(g, Format.Money(p.Balance), Theme.FontBodyBold, r, If(p.IsPaid, Theme.TextMuted, Theme.TextPrimary), flags Or TextFormatFlags.Right)
                 Case ColStatus
-                    PaintStatusPill(g, r, p.Status)
+                    RowPainter.PaintStatusPill(g, r, p.Status, S)
             End Select
-        End Sub
-
-        ''' <summary>Compact due tag: notched ticket, status-colored stub (the row's status edge), "15 OCT".</summary>
-        Private Sub PaintDueTag(g As Graphics, cell As Rectangle, p As PaymentSummary)
-            Gfx.HighQuality(g)
-            Dim w = 62 * S
-            Dim h = 38 * S
-            Dim r As New RectangleF(cell.X + 12 * S, cell.Y + (cell.Height - h) / 2.0F, w, h)
-            Using shape = Gfx.NotchedRect(r, 8 * S, 4.5F * S, r.Y + h / 2.0F, Single.NaN)
-                Using fill As New SolidBrush(Theme.Surface)
-                    g.FillPath(fill, shape)
-                End Using
-                Dim state = g.Save()
-                g.SetClip(New RectangleF(r.X - 1, r.Y - 1, 8 * S + 1, h + 2))
-                Using stub As New SolidBrush(Theme.StatusText(p.Status))
-                    g.FillPath(stub, shape)
-                End Using
-                g.Restore(state)
-                Using pen As New Pen(Theme.CardBorder)
-                    g.DrawPath(pen, shape)
-                End Using
-            End Using
-            Dim flags = TextFormatFlags.NoPadding Or TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine
-            Dim day = p.DueDate.Day.ToString(CultureInfo.InvariantCulture)
-            Dim month = p.DueDate.ToString("MMM", CultureInfo.InvariantCulture).ToUpperInvariant()
-            Dim dayWidth = TextRenderer.MeasureText(g, day, DayFont, Size.Empty, flags).Width
-            Dim monthWidth = TextRenderer.MeasureText(g, month, Theme.FontSmallCaps, Size.Empty, flags).Width
-            Dim x = CInt(r.X + 8 * S + (w - 8 * S - dayWidth - 3 * S - monthWidth) / 2.0F)
-            TextRenderer.DrawText(g, day, DayFont, New Rectangle(x, CInt(r.Y), dayWidth + 2, CInt(h)), Theme.TextPrimary, flags)
-            TextRenderer.DrawText(g, month, Theme.FontSmallCaps, New Rectangle(x + dayWidth + CInt(3 * S), CInt(r.Y + 1 * S), monthWidth + 2, CInt(h)), Theme.TextMuted, flags)
-        End Sub
-
-        Private Sub PaintStatusPill(g As Graphics, r As Rectangle, status As String)
-            Gfx.HighQuality(g)
-            Dim flags = TextFormatFlags.NoPadding Or TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine
-            Dim textWidth = TextRenderer.MeasureText(g, status, Theme.FontCaptionBold, Size.Empty, flags).Width
-            Dim h = 24 * S
-            Dim pill As New RectangleF(r.X, r.Y + (r.Height - h) / 2.0F, textWidth + 32 * S, h)
-            Gfx.FillRounded(g, pill, h / 2.0F, Theme.StatusSoft(status))
-            Dim dot = 6 * S
-            Using brush As New SolidBrush(Theme.StatusText(status))
-                g.FillEllipse(brush, pill.X + 10 * S, pill.Y + (h - dot) / 2.0F, dot, dot)
-            End Using
-            TextRenderer.DrawText(g, status, Theme.FontCaptionBold, New Rectangle(CInt(pill.X + 22 * S), CInt(pill.Y), textWidth + 4, CInt(h)),
-                                  Theme.StatusText(status), flags)
         End Sub
 
     End Class

@@ -12,6 +12,15 @@ Imports PayAlert.Services
 
 Namespace Views
 
+    ''' <summary>Extra filters the dashboard cards open Payments with (shown as a removable chip).</summary>
+    Public Enum DueWindow
+        None
+        ''' <summary>Unpaid and due today through 7 days from now.</summary>
+        Next7Days
+        ''' <summary>Unpaid and due tomorrow.</summary>
+        Tomorrow
+    End Enum
+
     ''' <summary>
     ''' Payments (§7): status tabs with counts, a direction toggle, a category filter and live search over one grid.
     ''' Double-click or Enter opens Payment Details. Each tab and filter has its own empty state.
@@ -32,10 +41,14 @@ Namespace Views
         Private _all As New List(Of PaymentSummary)
         Private _categories As List(Of Category)
         Private _applying As Boolean
+        Private _window As DueWindow
+        Private ReadOnly _windowChip As New PAButton()
 
         ''' <param name="status">Optional starting tab (a Theme.Status* value).</param>
         ''' <param name="direction">Optional starting direction (Payment.DirectionPayable / DirectionReceivable).</param>
-        Public Sub New(Optional status As String = Nothing, Optional direction As String = Nothing)
+        ''' <param name="window">Optional due-date window; shows a chip that removes it.</param>
+        Public Sub New(Optional status As String = Nothing, Optional direction As String = Nothing,
+                       Optional window As DueWindow = DueWindow.None)
             MyBase.New()
             SidebarKey = "payments"
             Title = "Payments"
@@ -68,8 +81,26 @@ Namespace Views
             _countLabel.TextAlign = Drawing.ContentAlignment.MiddleRight
             _countLabel.Font = Theme.FontCaption
             _countLabel.ForeColor = Theme.TextMuted
+            ' Due-window chip (from the dashboard): click it to remove the filter.
+            _window = window
+            _windowChip.Kind = ButtonKind.Secondary
+            _windowChip.Icon = IconKind.Close
+            _windowChip.Text = WindowLabel(window)
+            _windowChip.Dock = DockStyle.Left
+            _windowChip.Width = _windowChip.PreferredWidth()
+            _windowChip.Visible = window <> DueWindow.None
+            Dim chipGap As New Panel() With {.Dock = DockStyle.Left, .Width = 12, .Visible = _windowChip.Visible}
+            AddHandler _windowChip.Click,
+                Sub(s, e)
+                    _window = DueWindow.None
+                    _windowChip.Visible = False
+                    chipGap.Visible = False
+                    ApplyFilters()
+                End Sub
             Dim row2 As New Panel() With {.Dock = DockStyle.Top, .Height = 42}
             row2.Controls.Add(_countLabel)
+            row2.Controls.Add(_windowChip)
+            row2.Controls.Add(chipGap)
             row2.Controls.Add(_category)
             row2.Controls.Add(New Panel() With {.Dock = DockStyle.Left, .Width = 12})
             row2.Controls.Add(_direction)
@@ -122,7 +153,25 @@ Namespace Views
             ApplyFilters()
         End Sub
 
+        Private Shared Function WindowLabel(window As DueWindow) As String
+            Select Case window
+                Case DueWindow.Next7Days : Return "Due in the next 7 days"
+                Case DueWindow.Tomorrow : Return "Due tomorrow"
+                Case Else : Return ""
+            End Select
+        End Function
+
+        ''' <summary>The due-window rule, shared with the dashboard so its counts always match this screen.</summary>
+        Public Shared Function InWindow(p As PaymentSummary, window As DueWindow) As Boolean
+            Select Case window
+                Case DueWindow.Next7Days : Return p.Balance > 0D AndAlso p.DaysUntilDue >= 0 AndAlso p.DaysUntilDue <= 7
+                Case DueWindow.Tomorrow : Return p.Balance > 0D AndAlso p.DaysUntilDue = 1
+                Case Else : Return True
+            End Select
+        End Function
+
         Private Function MatchesFilters(p As PaymentSummary) As Boolean
+            If Not InWindow(p, _window) Then Return False
             Select Case _direction.SelectedIndex
                 Case 1 : If p.IsReceivable Then Return False
                 Case 2 : If Not p.IsReceivable Then Return False
@@ -158,7 +207,8 @@ Namespace Views
 
         Private ReadOnly Property HasExtraFilters As Boolean
             Get
-                Return _direction.SelectedIndex > 0 OrElse _category.SelectedIndex > 0 OrElse _search.Text.Trim().Length > 0
+                Return _direction.SelectedIndex > 0 OrElse _category.SelectedIndex > 0 OrElse _search.Text.Trim().Length > 0 OrElse
+                       _window <> DueWindow.None
             End Get
         End Property
 
@@ -174,7 +224,10 @@ Namespace Views
             ElseIf query.Length > 0 Then
                 SetEmpty(IconKind.Search, "No payments match """ & query & """", "Try another name or person, or clear the filters.", "Clear filters", IconKind.Close)
             ElseIf HasExtraFilters Then
-                SetEmpty(IconKind.Inbox, "Nothing for these filters", "No payments match this direction and category.", "Clear filters", IconKind.Close)
+                SetEmpty(IconKind.Inbox, "Nothing for these filters",
+                         If(_window = DueWindow.None, "No payments match this direction and category.",
+                            "Nothing unpaid is " & WindowLabel(_window).ToLowerInvariant() & " with these filters."),
+                         "Clear filters", IconKind.Close)
             Else
                 Select Case TabStatuses(_tabs.SelectedIndex)
                     Case Theme.StatusUpcoming
@@ -206,6 +259,7 @@ Namespace Views
             _search.Text = ""
             _direction.SelectedIndex = 0
             _category.SelectedIndex = 0
+            If _window <> DueWindow.None Then _windowChip.PerformClick()
             _applying = False
             ApplyFilters()
         End Sub
