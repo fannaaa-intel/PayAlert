@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>PayAlert</RootNamespace>
+    <AssemblyName>PayAlert</AssemblyName>
+    <StartupObject>PayAlert.Program</StartupObject>
+    <MyType>WindowsFormsWithCustomSubMain</MyType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <OptionStrict>On</OptionStrict>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+    <LangVersion>latest</LangVersion>
+    <Product>PayAlert</Product>
+    <Title>PayAlert: General Payment Reminder and Tracking System</Title>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Configuration" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="MySql.Data" Version="8.4.0" />
+  </ItemGroup>
+
+</Project>
