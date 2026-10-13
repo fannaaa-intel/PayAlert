@@ -7,6 +7,7 @@ This is an academic prototype. It uses demo data and does not process real money
 - **Stack:** VB.NET, Windows Forms, .NET Framework 4.8
 - **Database:** MySQL / MariaDB on XAMPP (`localhost:3306`, database `payalert_db`)
 - **Build plan:** see [PLAN.md](PLAN.md)
+- **Progress:** [docs/WORK_ORDER.md](docs/WORK_ORDER.md) (status and test checklists) and [docs/HANDOFF.md](docs/HANDOFF.md) (notes for the next work session)
 
 ## Requirements
 
