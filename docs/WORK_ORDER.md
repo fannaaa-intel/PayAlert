@@ -3,7 +3,7 @@
 The 11 build phases from [PLAN.md](../PLAN.md) §9, with status and a test checklist for each.
 Rules: one phase at a time. After each phase, build, test, then commit as `Phase N: <summary>` once the user confirms. **Push only when the user says "push".**
 
-_Last updated: 2026-10-14 (session 2: Phase 6 done)_
+_Last updated: 2026-10-14 (session 2: Phases 6 and 7 done)_
 
 | # | Work order | Status | Commit |
 |---|---|---|---|
@@ -13,8 +13,8 @@ _Last updated: 2026-10-14 (session 2: Phase 6 done)_
 | 4 | Main window and navigation | ✅ Done | `9b649a6` |
 | 5 | Payments (list, add/edit, details, delete) | ✅ Done | `77cbf80` |
 | 6 | Transactions, history and recurrence | ✅ Done | `005b9a7` |
-| 7 | Dashboard | ⏳ **Next** | |
-| 8 | Notifications | ⏳ | |
+| 7 | Dashboard | ✅ Done | `e4ab477` |
+| 8 | Notifications | ⏳ **Next** | |
 | 9 | Settings and profile | ⏳ | |
 | 10 | Admin | ⏳ | |
 | 11 | Polish | ⏳ | |
@@ -72,15 +72,15 @@ Done when: partial and full payments update the balance and status; recurring pa
 - [x] `ucHistory`: all transactions (Date, Payment, Direction, Amount, Method, Note); filters From/To, direction and search; footer **Total Paid** (payables) and **Total Collected** (receivables)
 - [x] Test: record ₱1,000 on Apartment Rent (status stays Partially Paid), then the rest (status Paid, Record button hidden); record the Streaming Plan in full and check that next month's appears; check that the History totals add up
 
-## 7. Dashboard ⏳ NEXT
+## 7. Dashboard ✅
 Done when: numbers match the Payments screen.
-- [ ] Greeting with first name and date (already in the placeholder)
-- [ ] Four SummaryCards: Due in 7 days, Due Tomorrow, Overdue (red), To Collect; clicking opens Payments filtered (`New ucPayments(status, direction)` already accepts filters)
-- [ ] "Total I Owe: ₱X · Total Owed to Me: ₱Y"; BalanceRing on the totals card (§6A)
-- [ ] Upcoming Payments: next 5 unpaid by due date, with DueTag and StatusPill; click opens details
-- [ ] Empty state "No payments yet. Add your first one."
+- [x] Greeting with first name and date (already in the placeholder)
+- [x] Four SummaryCards: Due in 7 days, Due Tomorrow, Overdue (red), To Collect; clicking opens Payments filtered (`New ucPayments(status, direction)` already accepts filters)
+- [x] "Total I Owe: ₱X · Total Owed to Me: ₱Y"; BalanceRing on the totals card (§6A)
+- [x] Upcoming Payments: next 5 unpaid by due date, with DueTag and StatusPill; click opens details
+- [x] Empty state "No payments yet. Add your first one."
 
-## 8. Notifications ⏳
+## 8. Notifications ⏳ NEXT
 Done when: demo data produces the expected alerts, with no duplicates.
 - [ ] `NotificationRepo` + `ReminderService`: run at login and every 5 minutes when `notifications_enabled = 1`; due_soon / due_tomorrow / due_today / overdue; duplicates blocked by the unique key (use INSERT IGNORE)
 - [ ] ucNotifications: cards newest first, colored dot, title, message, relative time; unread cards BrandSoft; click marks read and opens the payment; Mark all as read (toast)

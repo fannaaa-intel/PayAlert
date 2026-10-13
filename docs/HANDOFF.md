@@ -1,11 +1,11 @@
 # PayAlert: Session Hand-off
 
-_Updated in session 2 (2026-10-14), after Phase 6. Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
+_Updated in session 2 (2026-10-14), after Phase 7. Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
 
 ## Where we stopped
-- Phases 1–6 are done and committed on `main` (Phase 6 = `005b9a7`, "Phase 6: record payments, history and recurring payments").
+- Phases 1–7 are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477` "Phase 7: dashboard").
 - **Nothing is pushed.** The remote `origin` is https://github.com/fannaaa-intel/PayAlert.git. Push only when the user says "push".
-- **Next: Phase 7** (Dashboard). The checklist is in WORK_ORDER.md.
+- **Next: Phase 8** (Notifications). The checklist is in WORK_ORDER.md.
 
 ## How the user works
 - One phase at a time. Build, test, show the result, and wait for the user's OK before committing or starting the next phase.
@@ -26,11 +26,11 @@ Program.vb           AppFlow (ApplicationContext): frmLogin <-> frmRegister -> f
 Forms/               PAWindow (borderless base, rounded + layered shadow) -> AuthWindow -> frmLogin, frmRegister
                      frmMain (sidebar + content host driven by Navigator)
 Views/               PAView base (header band, Body panel, Back button, AddHeaderAction/SetHeaderActionVisible)
-                     ucPayments, ucPaymentEditor, ucPaymentDetails, ucHistory = real; the others are placeholders (AddPlaceholder)
+                     ucDashboard, ucPayments (+ DueWindow chip filter; InWindow shared with the dashboard), ucPaymentEditor, ucPaymentDetails, ucHistory = real; the others are placeholders (AddPlaceholder)
 Controls/            PAControl base; buttons; SoftCard; DueTag; BalanceRing; StatusPill; SummaryCard; SidebarButton;
                      PATextBox (icon, password eye, multiline); PesoTextBox; PASelect + SelectList; PADatePicker + CalendarPanel;
                      PopupHost (ToolStripDropDown); SegmentedControl; StatusTabs; PaymentGrid (custom-drawn DataGridView);
-                     TransactionGrid (same style; Compact mode for the details card); EmptyState (Compact mode); InlineMessage;
+                     TransactionGrid (same style; Compact mode for the details card); UpcomingList; RowPainter (shared compact due tag + status pill); EmptyState (Compact mode); InlineMessage;
                      PageHeader; ChromeButton; AuthArt
 Dialogs/             PADialog (Confirm/Info/Success/Error, and ShowForm to host a form body implementing IDialogBody),
                      dlgRecordPayment (an IDialogBody; reuse the same pattern for dlgChangePassword), PAToast.Notify,
@@ -82,7 +82,7 @@ Models/              User, Payment, PaymentSummary (row of v_payment_summary), C
   - pass `.psobject.BaseObject` when giving objects to reflection calls
 - Rule checks to run before finishing each phase: no `MessageBox`; no `New ComboBox/DateTimePicker/Button(`; no SQL outside `Data/` (and the seeder); `Option Strict On` + `Option Explicit On` in every file; no hard-coded colors outside Theme.vb; no third-party brand names.
 
-## Next steps (Phase 7)
-1. `ucDashboard`: greeting (already there), four SummaryCards (Due in 7 days, Due Tomorrow, Overdue, To Collect) that open `New ucPayments(status, direction)`.
-2. Totals line "Total I Owe · Total Owed to Me" with a BalanceRing on the totals card; Upcoming Payments (next 5 unpaid) with DueTag + StatusPill.
-3. Empty state when the user has no payments. Test that the numbers match the Payments screen, show the user, commit `Phase 7: ...` after they confirm.
+## Next steps (Phase 8)
+1. `NotificationRepo` (INSERT IGNORE against the unique key, list newest first, unread count, mark read / mark all read) and `Models/Notification`.
+2. `ReminderService`: run at login and every 5 minutes (WinForms Timer in frmMain) when `notifications_enabled = 1`; types due_soon / due_tomorrow / due_today / overdue.
+3. `ucNotifications` cards; sidebar badge through `frmMain.SetUnreadCount(n)`. Test no duplicates on repeated runs, show the user, commit after they confirm.
