@@ -6,6 +6,7 @@ Imports System.Drawing
 Imports System.Linq
 Imports System.Windows.Forms
 Imports PayAlert.Controls
+Imports PayAlert.Data
 Imports PayAlert.Dialogs
 Imports PayAlert.Services
 Imports PayAlert.Views
@@ -43,6 +44,8 @@ Namespace Forms
         Private ReadOnly _buttons As New Dictionary(Of String, SidebarButton)
         Private ReadOnly _logoutButton As New SidebarButton()
         Private ReadOnly _navigator As Navigator
+        ''' <summary>Re-checks reminders every 5 minutes while the app is open (§3.7).</summary>
+        Private ReadOnly _reminderTimer As New Timer() With {.Interval = 5 * 60 * 1000}
 
         Public Sub New()
             SuspendLayout()
@@ -68,6 +71,7 @@ Namespace Forms
 
             _navigator = New Navigator(_content)
             AddHandler _navigator.Navigated, AddressOf OnNavigated
+            AddHandler _reminderTimer.Tick, Sub(s, e) RunReminders()
             ResumeLayout(False)
             PerformLayout()
         End Sub
@@ -80,6 +84,8 @@ Namespace Forms
 
         Protected Overrides Sub OnShown(e As EventArgs)
             MyBase.OnShown(e)
+            RunReminders()
+            _reminderTimer.Start()
             Open("dashboard")
         End Sub
 
@@ -136,7 +142,35 @@ Namespace Forms
             Text = If(_navigator.Current Is Nothing, "PayAlert", _navigator.Current.Title & " - PayAlert")
         End Sub
 
-        ''' <summary>Unread count shown on the Notifications item (wired up in Phase 8).</summary>
+        ' ---------------------------------------------------------------- reminders
+
+        ''' <summary>
+        ''' Creates today's reminders (if notifications are on), refreshes the badge, and reloads the Notifications screen
+        ''' when it is showing. Runs at login and on the 5-minute timer; problems are logged, never shown, since the
+        ''' screens report database trouble themselves.
+        ''' </summary>
+        Public Sub RunReminders()
+            If Not Session.IsSignedIn Then Return
+            Try
+                Dim created = ReminderService.Run(Session.CurrentUser.UserId)
+                If created > 0 Then TryCast(_navigator.Current, ucNotifications)?.Reload()
+            Catch ex As Exception
+                Debug.WriteLine("[frmMain.RunReminders] " & ex.ToString())
+            End Try
+            RefreshUnreadCount()
+        End Sub
+
+        ''' <summary>Reads the unread count again and shows it on the Notifications item.</summary>
+        Public Sub RefreshUnreadCount()
+            If Not Session.IsSignedIn Then Return
+            Try
+                SetUnreadCount(NotificationRepo.CountUnread(Session.CurrentUser.UserId))
+            Catch ex As Exception
+                Debug.WriteLine("[frmMain.RefreshUnreadCount] " & ex.ToString())
+            End Try
+        End Sub
+
+        ''' <summary>Unread count shown on the Notifications item.</summary>
         Public Sub SetUnreadCount(count As Integer)
             Dim button As SidebarButton = Nothing
             If _buttons.TryGetValue("notifications", button) Then button.BadgeCount = count
@@ -188,6 +222,12 @@ Namespace Forms
                                   Theme.TextPrimary, flags Or TextFormatFlags.EndEllipsis)
             TextRenderer.DrawText(g, If(user.IsAdmin, "Administrator", "User") & "  ·  " & user.Email, Theme.FontCaption,
                                   New Rectangle(textX, CInt(top + 26 * s), textWidth, CInt(18 * s)), Theme.TextMuted, flags Or TextFormatFlags.EndEllipsis)
+        End Sub
+
+        Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
+            _reminderTimer.Stop()
+            _reminderTimer.Dispose()
+            MyBase.OnFormClosed(e)
         End Sub
 
         ' ---------------------------------------------------------------- keys
