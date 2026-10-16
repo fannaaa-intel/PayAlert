@@ -37,6 +37,7 @@ Namespace Forms
             New NavItem With {.Key = "dashboard", .Text = "Dashboard", .Icon = IconKind.Dashboard, .Factory = Function() New ucDashboard()},
             New NavItem With {.Key = "payments", .Text = "Payments", .Icon = IconKind.Payments, .Factory = Function() New ucPayments()},
             New NavItem With {.Key = "history", .Text = "History", .Icon = IconKind.History, .Factory = Function() New ucHistory()},
+            New NavItem With {.Key = "reports", .Text = "Summary", .Icon = IconKind.Chart, .Factory = Function() New ucReports()},
             New NavItem With {.Key = "notifications", .Text = "Notifications", .Icon = IconKind.Bell, .Factory = Function() New ucNotifications()},
             New NavItem With {.Key = "settings", .Text = "Settings", .Icon = IconKind.Settings, .Factory = Function() New ucSettings()},
             New NavItem With {.Key = "admin", .Text = "Admin", .Icon = IconKind.Admin, .Factory = Function() New ucAdminDashboard(), .AdminOnly = True}}

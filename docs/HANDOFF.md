@@ -1,11 +1,12 @@
 # PayAlert: Session Hand-off
 
-_Updated in session 2 (2026-10-14), after Phase 11 (all phases done). Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
+_Updated in session 3 (2026-10-16), after building the client revision (phases 12 to 15). Read this together with [PLAN.md](../PLAN.md) (source of truth) and [WORK_ORDER.md](WORK_ORDER.md) (status and checklists)._
 
 ## Where we stopped
 - All 11 phases are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477`, Phase 8 = `57c3145`, Phase 9 = `279c927`, Phase 10 = `5528c33`, Phase 11 = `284e1db` "Phase 11: polish").
 - **Pushed** to https://github.com/fannaaa-intel/PayAlert.git (`main`) on 2026-10-14 at the user's request. Push again only when the user says "push".
-- **Next:** nothing planned. Remaining manual check: open each screen once at real 150% scaling on the client PC. The checklist is in WORK_ORDER.md.
+- **Session 3 (2026-10-16):** built the client revision (PLAN.md §12): Phase 12 easier to use (Text size Normal/Large, one-click open), 13 payment reference (reference no., payer, proof picture), 14 advance payment, 15 Payment Summary report. All built and tested offscreen in both text sizes; **not committed yet**, waiting for the user's OK.
+- **Next:** after the user's OK, commit each phase as `Phase N: <summary>` and update WORK_ORDER.md. Then the manual check at real 150% scaling on the client PC, in both text sizes.
 
 ## How the user works
 - One phase at a time. Build, test, show the result, and wait for the user's OK before committing or starting the next phase.
@@ -35,14 +36,14 @@ Controls/            PAControl base; buttons; SoftCard; DueTag; BalanceRing; Sta
 Dialogs/             PADialog (Confirm/Info/Success/Error, and ShowForm to host a form body implementing IDialogBody),
                      dlgRecordPayment and dlgChangePassword (IDialogBody forms), PAToast.Notify,
                      DimOverlay, ShadowWindow, Native (Win32)
-Data/                Db (parameterized helpers, FriendlyMessageFor), UserRepo, CategoryRepo, PaymentRepo, TransactionRepo,
+Data/                Db (parameterized helpers, FriendlyMessageFor), SchemaUpgrade (adds the revision's columns at startup), ProofRepo, UserRepo, CategoryRepo, PaymentRepo, TransactionRepo,
                      NotificationRepo (INSERT IGNORE), SettingsRepo (Get/Save), AdminRepo (stats, users, SetActive); UserRepo has FindById, UpdateProfile, UpdatePasswordHash
 Services/            Session, AuthService (BCrypt), Navigator, DemoDataSeeder, Format (Money, ShortDate, DuePhrase, RelativeDay),
                      TransactionService.Record (one DB transaction: lock payment row, check balance, insert, then
                      RecurrenceService.CreateNextIfPaid), RecurrenceService (NextDueDate, no duplicate children),
                      AdminService (admin-only, never on your own account; temporary passwords via RandomNumberGenerator),
                      ReminderService (one most-specific reminder per unpaid payment per day; frmMain runs it at login + 5-min timer)
-Theme/               Theme (tokens, fonts, Px), Gfx (rounded/notched paths, shadow, logo mark), Icons (GDI+ line icons), AppIcon
+Theme/               Theme (tokens, fonts that switch with SetLargeText, Px), Gfx (rounded/notched paths, shadow, logo mark), Icons (GDI+ line icons), AppIcon
 Models/              User, Payment, PaymentSummary (row of v_payment_summary), Category, PaymentTransaction, Notification, UserSettings, UserSummary, AdminStats
 ```
 - Navigation: `Navigator.ShowRoot(view)` for sidebar sections, `Push(view)` for inner screens, `GoBack()`, `BackToRoot()`. Views reload their data in `OnNavigatedTo()`. Screens left behind are disposed through BeginInvoke.
@@ -93,3 +94,11 @@ Models/              User, Payment, PaymentSummary (row of v_payment_summary), C
 ## Testing tip (session 2)
 If the user has PayAlert open, `dotnet build` can't overwrite the exe. Don't close their window: build into the scratchpad with
 `dotnet build PayAlert/PayAlert.vbproj -o <scratch>/build` and point the harness at that copy.
+
+## Revision notes (session 3)
+- **Text size:** `Theme.SetLargeText(True)` rebuilds the shared fonts (× 1.2). Fonts are read when a control is built or painted, so a change only shows in a new window: `AppFlow.ShowMain` applies the user's setting before creating `frmMain`, and Settings raises `frmMain.TextSizeChanged` to reopen the main window on Settings. Use `Theme.IsLargeText` for the few fixed widths that need more room. Login and Register reset to Normal.
+- **Schema:** the new columns and the `payment_proofs` table come from `Data/SchemaUpgrade.vb` (run in `frmLogin.PrepareDatabaseAsync` before the seeder) and from `Database/04_revision.sql` for phpMyAdmin. Keep the two in step.
+- **Proof pictures** live in the database (`payment_proofs.data`), so they move with it. XAMPP's `max_allowed_packet` is **1 MB**: `ProofImage.Shrink` keeps every picture under 600 KB. Don't raise that limit without checking the server setting.
+- **Advance:** `TransactionService.Record` pays the balance first, then `PayAhead` walks the recurring chain with `GetNextInChain`, locking each balance and creating the next payment through `RecurrenceService.CreateNextIfPaid`. A deleted payment in the chain throws `AdvanceBlockedException` and the whole transaction rolls back.
+- **Methods:** GCash and Maya are plain-text method names at the client's request (PLAN.md §6A exception). `ReportService.CleanMethod` maps any capitalisation to the standard spelling.
+- **Testing in session 3:** a C# harness (`Harness.exe`, built into the scratchpad build folder next to `PayAlert.exe`, with `PayAlert.exe.config` copied as its config for the binding redirects) drives screens offscreen. A WinForms timer answers any PADialog that opens (Cancel by default) and screenshots it. Dialog bodies (`dlgRecordPayment`, `dlgTransactionDetails`) are created through their private constructors and hosted in an offscreen form. `PADialog.Run` clamps dialogs onto the visible screen, so never open a real PADialog during tests.

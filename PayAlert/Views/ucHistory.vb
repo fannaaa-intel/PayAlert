@@ -63,12 +63,12 @@ Namespace Views
 
             ' Row 2: From / To and direction.
             _from.Dock = DockStyle.Left
-            _from.Width = If(large, 290, 256)
+            _from.Width = If(large, 276, 256)
             _to.Dock = DockStyle.Left
-            _to.Width = If(large, 270, 240)
+            _to.Width = If(large, 248, 240)
             _direction.SetItems("All", "I Owe", "Owed to Me")
             _direction.Dock = DockStyle.Left
-            _direction.Width = 280
+            _direction.Width = If(large, 312, 280)
             Dim row2 As New Panel() With {.Dock = DockStyle.Top, .Height = 42}
             ' Docked left-to-right: the last added docks first.
             row2.Controls.Add(_direction)

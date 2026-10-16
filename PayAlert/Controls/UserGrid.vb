@@ -62,7 +62,7 @@ Namespace Controls
             AddColumn(ColEmail, "EMAIL", 0, 30, DataGridViewContentAlignment.MiddleLeft)
             AddColumn(ColRole, "ROLE", 110, 0, DataGridViewContentAlignment.MiddleLeft)
             AddColumn(ColStatus, "STATUS", 140, 0, DataGridViewContentAlignment.MiddleLeft)
-            AddColumn(ColPayments, "PAYMENTS", 104, 0, DataGridViewContentAlignment.MiddleRight)
+            AddColumn(ColPayments, "PAYMENTS", If(Theme.IsLargeText, 124, 104), 0, DataGridViewContentAlignment.MiddleRight)
             AddColumn(ColJoined, "JOINED", 130, 0, DataGridViewContentAlignment.MiddleLeft)
         End Sub
 

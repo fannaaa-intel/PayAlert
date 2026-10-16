@@ -242,6 +242,7 @@ This app is built for a specific client and **must not look like a template or l
   - Don't use stock "admin template" layouts.
 - **No trademarks:**
   - No third-party brand names, logos, product icons or brand colors in the UI, code, sample data or screenshots.
+  - **One exception (client revision, §12):** the payment methods **GCash** and **Maya** appear as plain text in the method list, the demo data and the Payment Summary report, because the client asked for them by name. Never their logos or brand colors.
   - The only logo is the client's own PayAlert logo.
 - **Icons:** draw them yourself with GDI+ (simple geometric line icons) or use plain Segoe MDL2 Assets glyphs. No icon packs copied from elsewhere.
 - **Default WinForms look is not acceptable for visible UI:**
@@ -530,3 +531,48 @@ On startup, if the `users` table is empty, create:
 - Biometric login
 - Credit scoring or lending decisions
 - Sharing records between accounts
+
+## 12. Client revision (2026)
+
+The client asked for four improvements after Phase 11 (original request in Taglish):
+
+1. **User-friendly interface**, with older users in mind: simple, clear and easy screens.
+2. **Advance payment**, with the remaining balance updating automatically.
+3. **Payment reference**: reference number, the name of who paid, and proof of payment, to identify and verify each transaction.
+4. **Payment summary report**: total payments by payment method (GCash, Maya, bank transfer, cash).
+
+### Database (`Database/04_revision.sql`, also applied by the app at startup through `Data/SchemaUpgrade.vb`)
+```
+user_settings
+  + large_text TINYINT(1) NOT NULL DEFAULT 0        -- Text size: Normal (0) or Large (1)
+
+payment_proofs                                       -- new table
+  proof_id INT PK AUTO_INCREMENT
+  user_id INT NOT NULL FK -> users
+  file_name VARCHAR(255) NOT NULL
+  content_type VARCHAR(50) NOT NULL                  -- image/jpeg
+  data MEDIUMBLOB NOT NULL                           -- resized to stay under 600 KB (XAMPP max_allowed_packet is 1 MB)
+  created_at DATETIME
+
+payment_transactions
+  + reference_no VARCHAR(50) NULL
+  + payer_name VARCHAR(100) NULL
+  + proof_id INT NULL FK -> payment_proofs           -- shared by the records of one advance
+  + is_advance TINYINT(1) NOT NULL DEFAULT 0         -- carried over from an earlier payment of the series
+```
+
+### Rules
+- **Text size** (Settings → Preferences): Normal or Large (all fonts × 1.2), saved per user. Changing it reopens the main window on Settings in the new size. Login and Register stay Normal. Every screen must fit at 1280×688 in both sizes.
+- **One click** opens a row in Payments, History and a payment's history (no double-click).
+- **Record Payment** adds: Reference no. (optional; warns, without blocking, when the same number was already recorded, ignoring spaces, dashes and case), Paid by / Received from (defaults to the user for I Owe, the other person for Owed to Me), and Proof of payment (a JPG/PNG/BMP/GIF picture; turned upright, flattened on white, at most 1600 px and 600 KB). Methods: Cash, GCash, Maya, Bank Transfer, Card, Other (typed). Old "E-wallet" records still show.
+- **Payment record** window (click a record): amount, date, method, reference, payer, note, Advance tag, and the proof picture with "View full size" (opens in the Windows picture viewer). From History it also offers "Open Payment".
+- **Advance payment**: only for repeating payments. The amount may be up to the balance plus 12 periods. The balance is paid first; the rest goes to the next payments of the series in order (created as each becomes paid), as records marked `is_advance` with the same method, reference, payer and proof. One database transaction; if a later payment of the series was deleted, nothing is saved and the user is told why. One-time payments still can't take more than their balance.
+- **Payment Summary** (sidebar **Summary**): date range (This month, Last month, This year, All time, or From/To) and direction. Totals strip (Total, Paid, Collected) and one bar per method, biggest first, "Not set" last; methods are grouped ignoring case and spaces. **Save as CSV** (UTF-8 with BOM, for Excel).
+
+### Phases
+| # | Phase | Done when |
+|---|---|---|
+| 12 | **Easier to use**: Text size setting (Normal/Large), one-click open, clearer hints, layouts checked in Large | Every screen fits and nothing important is cut off in both sizes; the setting saves and reloads. |
+| 13 | **Payment reference**: reference no., payer, proof picture, record details window, search by reference | A recorded payment shows its reference, payer and proof; a reused reference warns; a bad file is refused inline. |
+| 14 | **Advance payment**: pay ahead on repeating payments | Overpaying a repeating payment fills the next ones in order and their balances update; one-time payments refuse it. |
+| 15 | **Payment Summary report** by method, with CSV | Totals per method match History for the same range; CSV opens in Excel. |

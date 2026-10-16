@@ -32,9 +32,10 @@ This is an academic prototype. It uses demo data and does not process real money
    1. `Database/01_schema.sql`: creates `payalert_db` and its six tables
    2. `Database/02_views.sql`: creates the `v_payment_summary` view
    3. `Database/03_seed.sql`: adds the seven payment categories
-4. Refresh the left panel. `payalert_db` should list 6 tables and 1 view.
+   4. `Database/04_revision.sql`: adds the 2026 revision (text size setting, payment reference and proof, advance payments)
+4. Refresh the left panel. `payalert_db` should list 7 tables and 1 view.
 
-All three scripts are safe to run again; they won't duplicate anything.
+All four scripts are safe to run again; they won't duplicate anything. You can skip `04_revision.sql`: the app adds the same columns by itself when it starts, so a database made before the revision keeps working.
 
 The app creates the demo accounts and payments itself, the first time it starts with an empty `users` table.
 
@@ -66,11 +67,15 @@ To recreate the demo data, empty the tables in phpMyAdmin (or drop `payalert_db`
 | **Login / Register** | Sign in, or create an account. Problems show next to each field. |
 | **Dashboard** | Due in 7 days, Due tomorrow, Overdue and To Collect cards (each opens the matching list), your totals with the balance ring, and the next five unpaid payments. |
 | **Payments** | Every payment with status tabs (All, Upcoming, Partial, Paid, Overdue), I Owe / Owed to Me, category and search. Add, view, edit and delete. |
-| **Payment Details** | Balance ring, due date, details and the payment's history. **Record Payment** (or **Record Collection**) takes full or partial amounts. A recurring payment creates the next one when it's fully paid. |
-| **History** | Every recorded payment and collection with date range, direction and search, plus **Total Paid** and **Total Collected**. |
+| **Payment Details** | Balance ring, due date, details and the payment's history. **Record Payment** (or **Record Collection**) takes full or partial amounts, the method (Cash, GCash, Maya, Bank Transfer, Card or your own), a **reference number**, who paid, and a **proof of payment** picture. A recurring payment creates the next one when it's fully paid. Click a record to see its reference and proof. |
+| **Advance payment** | On a repeating payment, enter more than the balance to pay ahead. The extra goes to the next months (or weeks) in order, up to 12 ahead, and each balance updates by itself. Those records show an **Advance** tag. |
+| **History** | Every recorded payment and collection with date range, direction and search (also by reference number), plus **Total Paid** and **Total Collected**. |
+| **Summary** | Payment Summary report: totals by payment method (GCash, Maya, Bank Transfer, Cash...) for a date range, split into paid and collected. **Save as CSV** opens in Excel. |
 | **Notifications** | Reminders before, on and after due dates, grouped by day. The sidebar badge shows how many are unread. Reminders are checked when you log in and every 5 minutes. |
-| **Settings** | Profile (name and email), Change Password, reminders on/off, default reminder (1, 3 or 7 days), and Log out. |
+| **Settings** | Profile (name and email), Change Password, reminders on/off, default reminder (1, 3 or 7 days), **Text size** (Normal or Large, for easier reading), and Log out. |
 | **Admin** (admins only) | Totals across PayAlert, and Manage Users: activate or deactivate accounts and reset passwords (a temporary password is shown once). |
+
+**Easy to use:** one click on a row opens it (no double-click needed), and **Settings → Text size → Large** makes every word and number bigger.
 
 **Keyboard:** Enter saves a form or opens the selected row, Esc closes a dialog, Tab moves through each screen top to bottom, and Alt+Left goes back.
 
@@ -83,10 +88,10 @@ The app is DPI-aware and was checked at the size of a maximized window on a 1920
 | Message | What to do |
 |---|---|
 | "Can't reach the database. Make sure MySQL is running in XAMPP." | Start MySQL in the XAMPP Control Panel. If it won't start, stop the separate *MySQL80* service (see step 1). |
-| "The PayAlert database wasn't found…" | Run the three SQL files (step 2). |
+| "The PayAlert database wasn't found…" | Run the SQL files (step 2). |
 | "MySQL refused the login…" | Set the right password in `PayAlert/App.config`. |
 | "This account is deactivated." | Ask an administrator to activate it in Admin → Manage Users. |
 
 ## Project status
 
-All 11 build phases from [PLAN.md](PLAN.md) are done. See [docs/WORK_ORDER.md](docs/WORK_ORDER.md) for each phase's checklist.
+All 11 build phases from [PLAN.md](PLAN.md) are done, plus the 2026 client revision (phases 12 to 15: easier to use, payment reference, advance payment, payment summary report). See [docs/WORK_ORDER.md](docs/WORK_ORDER.md) for each phase's checklist.
