@@ -12,9 +12,10 @@ Namespace Dialogs
 
     ''' <summary>
     ''' Record Payment / Record Collection (§7), shown inside a PADialog: Amount (defaults to the full balance,
-    ''' more than 0 and no more than the balance), Date paid (today, not in the future), Method (Cash, E-wallet,
-    ''' Bank Transfer, Card, or Other with its own name) and a Note. Problems show under each field; Save stays
-    ''' disabled until everything is valid. Use <see cref="Run"/>.
+    ''' more than 0 and no more than the balance), Date paid (today, not in the future), Method (Cash, GCash, Maya,
+    ''' Bank Transfer, Card, or Other with its own name), the payment reference (reference number, who paid, and a
+    ''' proof picture) and a Note. Problems show under each field; Save stays disabled until everything is valid.
+    ''' A reference number that was already recorded gets a warning (not an error). Use <see cref="Run"/>.
     ''' </summary>
     Public NotInheritable Class dlgRecordPayment
         Inherits Panel
@@ -27,6 +28,8 @@ Namespace Dialogs
         Private Const NoteHeight As Integer = 20
         Private Const NoteMax As Integer = 255
         Private Const MethodMax As Integer = 50
+        Private Const ReferenceMax As Integer = 50
+        Private Const PayerMax As Integer = 100
 
         Private ReadOnly _payment As PaymentSummary
         Private _balance As Decimal
@@ -36,6 +39,14 @@ Namespace Dialogs
         Private ReadOnly _method As New PASelect()
         Private ReadOnly _otherMethod As New PATextBox()
         Private ReadOnly _note As New PATextBox()
+        Private ReadOnly _reference As New PATextBox()
+        Private ReadOnly _payer As New PATextBox()
+        Private ReadOnly _proof As New ProofPicker()
+        Private ReadOnly _referenceNote As New Label()
+        Private ReadOnly _payerNote As New Label()
+        Private ReadOnly _proofNote As New Label()
+        Private _referenceWarning As String
+        Private _proofError As String
         Private ReadOnly _amountNote As New Label()
         Private ReadOnly _dateNote As New Label()
         Private ReadOnly _methodNote As New Label()
@@ -75,8 +86,16 @@ Namespace Dialogs
             _method.Icon = IconKind.Payments
             _otherMethod.PlaceholderText = "e.g. Check"
             _otherMethod.MaxLength = MethodMax
-            _note.PlaceholderText = "Reference number or anything to remember (optional)"
+            _note.PlaceholderText = "Anything to remember (optional)"
             _note.MaxLength = NoteMax
+            _reference.Icon = IconKind.Hash
+            _reference.PlaceholderText = "e.g. 1012 3456 7890"
+            _reference.MaxLength = ReferenceMax
+            _payer.Icon = IconKind.User
+            _payer.PlaceholderText = If(payment.IsReceivable, "Who gave you the money", "Who paid")
+            _payer.MaxLength = PayerMax
+            ' For "I Owe" you are the one paying; for "Owed to Me" it's usually the other person.
+            _payer.Text = If(payment.IsReceivable, payment.Counterparty, If(Session.CurrentUser?.FullName, ""))
 
             Dim colWidth = (Theme.Px(540 - 48) - Theme.Px(ColumnGap)) \ 2
             Dim rightX = colWidth + Theme.Px(ColumnGap)
@@ -88,7 +107,11 @@ Namespace Dialogs
             AddField("Method", _method, _methodNote, 0, y, colWidth)
             AddField("Method name *", _otherMethod, _otherNote, rightX, y, colWidth, _otherCaption)
             y += RowHeight + Theme.Px(RowGap)
-            AddField("Note", _note, _noteNote, 0, y, fullWidth)
+            AddField("Reference no.", _reference, _referenceNote, 0, y, colWidth)
+            AddField(If(payment.IsReceivable, "Received from", "Paid by"), _payer, _payerNote, rightX, y, colWidth)
+            y += RowHeight + Theme.Px(RowGap)
+            AddField("Proof of payment", _proof, _proofNote, 0, y, colWidth)
+            AddField("Note", _note, _noteNote, rightX, y, colWidth)
             y += RowHeight
             Size = New Size(fullWidth, y)
 
@@ -96,7 +119,10 @@ Namespace Dialogs
             _date.TabIndex = 1
             _method.TabIndex = 2
             _otherMethod.TabIndex = 3
-            _note.TabIndex = 4
+            _reference.TabIndex = 4
+            _payer.TabIndex = 5
+            _proof.TabIndex = 6
+            _note.TabIndex = 7
             SetOtherVisible(False)
 
             AddHandler _amount.ValueChanged, Sub(s, e) CheckForm()
@@ -109,6 +135,23 @@ Namespace Dialogs
                     CheckForm()
                 End Sub
             AddHandler _note.TextChanged, Sub(s, e) CheckForm()
+            AddHandler _reference.TextChanged,
+                Sub(s, e)
+                    _referenceWarning = Nothing
+                    CheckForm()
+                End Sub
+            AddHandler _reference.Leave, Sub(s, e) CheckReferenceUsed()
+            AddHandler _payer.TextChanged, Sub(s, e) CheckForm()
+            AddHandler _proof.ProofChanged,
+                Sub(s, e)
+                    _proofError = Nothing
+                    CheckForm()
+                End Sub
+            AddHandler _proof.PickFailed,
+                Sub(s, message)
+                    _proofError = message
+                    CheckForm()
+                End Sub
             CheckForm()
         End Sub
 
@@ -196,9 +239,41 @@ Namespace Dialogs
 
             ShowNote(_noteNote, _note.Text.Length & " / " & NoteMax, False)
 
+            If _referenceWarning IsNot Nothing Then
+                ShowNote(_referenceNote, _referenceWarning, False)
+                _referenceNote.ForeColor = Theme.ToneColor(Tone.Warning)
+            Else
+                ShowNote(_referenceNote, "From the receipt or confirmation.", False)
+            End If
+            ShowNote(_payerNote, If(_payment.IsReceivable, "The person who paid you.", "The person who paid."), False)
+            If _proofError IsNot Nothing Then
+                ShowNote(_proofNote, _proofError, True)
+            Else
+                ShowNote(_proofNote, If(_proof.HasProof, "Click to change, or × to remove.", "Optional. Helps you check it later."), False)
+            End If
+            _proof.HasError = _proofError IsNot Nothing
+
             SetCanSubmit(amountError Is Nothing AndAlso dateError Is Nothing AndAlso otherError Is Nothing)
             Return _canSubmit
         End Function
+
+        ''' <summary>Warns (without blocking) when the reference number was already recorded, e.g. the same receipt twice.</summary>
+        Private Sub CheckReferenceUsed()
+            Dim reference = _reference.Text.Trim()
+            _referenceWarning = Nothing
+            If reference.Length > 0 AndAlso Session.IsSignedIn Then
+                Try
+                    Dim earlier = TransactionRepo.FindByReference(Session.CurrentUser.UserId, reference)
+                    If earlier.Count > 0 Then
+                        _referenceWarning = "Already used on " & Format.ShortDate(earlier(0).PaidOn) & "."
+                    End If
+                Catch ex As Exception
+                    ' Only a convenience check; saving reports database problems.
+                    Debug.WriteLine("[dlgRecordPayment] " & ex.ToString())
+                End Try
+            End If
+            CheckForm()
+        End Sub
 
         Private Shared Sub ShowNote(note As Label, message As String, isError As Boolean)
             note.Text = message
@@ -233,10 +308,12 @@ Namespace Dialogs
                 .Amount = _amount.Value.Value,
                 .PaidOn = _date.Value,
                 .Method = If(IsOtherMethod, _otherMethod.Text.Trim(), CStr(_method.SelectedItem)),
+                .ReferenceNo = _reference.Text.Trim(),
+                .PayerName = _payer.Text.Trim(),
                 .Note = _note.Text.Trim()}
             Dim outcome As RecordResult
             Try
-                outcome = TransactionService.Record(txn, Session.CurrentUser.UserId)
+                outcome = TransactionService.Record(txn, Session.CurrentUser.UserId, _proof.Proof)
             Catch ex As Exception
                 Debug.WriteLine("[dlgRecordPayment] " & ex.ToString())
                 PADialog.Error(Me, If(_payment.IsReceivable, "Couldn't record the collection", "Couldn't record the payment"),

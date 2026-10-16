@@ -16,7 +16,7 @@ Namespace Views
     ''' <summary>
     ''' History (§7, manuscript Figure 7): every recorded payment and collection. Filters: a quick range or From/To dates,
     ''' direction, and a payment search. The footer adds up Total Paid (I Owe) and Total Collected (Owed to Me) for
-    ''' what is shown. One click on a row (or Enter) opens the payment.
+    ''' what is shown. One click on a row (or Enter) shows the record (reference number, proof), with a way to its payment.
     ''' </summary>
     Public Class ucHistory
         Inherits PAView
@@ -47,7 +47,7 @@ Namespace Views
             _range.Dock = DockStyle.Left
             _range.Width = 470
             _search.Icon = IconKind.Search
-            _search.PlaceholderText = "Search by payment, method or note"
+            _search.PlaceholderText = "Search payment, method, reference no."
             _search.Dock = DockStyle.Right
             _search.Width = If(large, 360, 300)
             _countLabel.Dock = DockStyle.Fill
@@ -102,7 +102,11 @@ Namespace Views
             AddHandler _to.ValueChanged, AddressOf DatesChanged
             AddHandler _direction.SelectedIndexChanged, Sub(s, e) ApplyFilters()
             AddHandler _search.TextChanged, Sub(s, e) ApplyFilters()
-            AddHandler _grid.TransactionActivated, Sub(s, t) Navigator.Push(New ucPaymentDetails(t.PaymentId))
+            AddHandler _grid.TransactionActivated,
+                Sub(s, t)
+                    ' The record first (reference, proof); "Open Payment" from there goes to the payment.
+                    If dlgTransactionDetails.Run(Me, t, offerOpenPayment:=True) Then Navigator.Push(New ucPaymentDetails(t.PaymentId))
+                End Sub
             AddHandler _empty.ActionClick, AddressOf EmptyActionClicked
         End Sub
 
@@ -172,7 +176,9 @@ Namespace Views
             If query.Length > 0 AndAlso
                t.PaymentName.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) < 0 AndAlso
                t.Method.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) < 0 AndAlso
-               t.Note.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) < 0 Then Return False
+               t.Note.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) < 0 AndAlso
+               t.PayerName.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) < 0 AndAlso
+               TransactionRepo.NormalizeReference(t.ReferenceNo).IndexOf(TransactionRepo.NormalizeReference(query), StringComparison.Ordinal) < 0 Then Return False
             Return True
         End Function
 
@@ -212,7 +218,7 @@ Namespace Views
             ElseIf Not DatesValid Then
                 SetEmpty(IconKind.Calendar, "Check the dates", "The From date must be on or before the To date.", "Show the last 30 days", IconKind.Calendar)
             ElseIf query.Length > 0 Then
-                SetEmpty(IconKind.Search, "Nothing matches """ & query & """", "Try another payment name, method or note, or clear the filters.", "Clear filters", IconKind.Close)
+                SetEmpty(IconKind.Search, "Nothing matches """ & query & """", "Try another payment name, method, reference number or note, or clear the filters.", "Clear filters", IconKind.Close)
             Else
                 SetEmpty(IconKind.Calendar, "Nothing recorded in this range", "Try a longer range, like ""All time"".", "Show all time", IconKind.Calendar)
             End If

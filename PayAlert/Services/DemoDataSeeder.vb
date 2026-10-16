@@ -41,11 +41,14 @@ Namespace Services
             Public PaidOffsetDays As Integer
             Public Method As String
             Public TxnNote As String
+            Public Reference As String
+            Public Payer As String
             Public Recurrence As String
             Public Notes As String
         End Class
 
-        ''' <summary>The §8 demo set. Sample names are generic on purpose: no real companies or brands.</summary>
+        ''' <summary>The §8 demo set. Sample names are generic on purpose: no real companies. The only brand is the GCash
+        ''' payment method, which the client asked for (2026 revision).</summary>
         Private Shared Function DemoPayments() As List(Of DemoPayment)
             Return New List(Of DemoPayment) From {
                 New DemoPayment With {.Name = "BNPL Installment", .Direction = "payable", .Category = "Buy Now Pay Later", .Person = "Online Store",
@@ -58,15 +61,17 @@ Namespace Services
                                       .Total = 1000D, .DueOffsetDays = -4},
                 New DemoPayment With {.Name = "Apartment Rent", .Direction = "payable", .Category = "Rent", .Person = "Landlord",
                                       .Total = 5000D, .DueOffsetDays = 6,
-                                      .PaidSoFar = 2000D, .PaidOffsetDays = -5, .Method = "Bank Transfer", .TxnNote = "First half of the month's rent"},
+                                      .PaidSoFar = 2000D, .PaidOffsetDays = -5, .Method = "Bank Transfer", .TxnNote = "First half of the month's rent",
+                                      .Reference = "BT-204817", .Payer = "Juan Dela Cruz"},
                 New DemoPayment With {.Name = "Water Bill", .Direction = "payable", .Category = "Bills", .Person = "Water Utility",
                                       .Total = 500D, .DueOffsetDays = -2,
-                                      .PaidSoFar = 500D, .PaidOffsetDays = -3, .Method = "E-wallet", .TxnNote = "Paid in full"},
+                                      .PaidSoFar = 500D, .PaidOffsetDays = -3, .Method = "GCash", .TxnNote = "Paid in full",
+                                      .Reference = "1012 3456 7890", .Payer = "Juan Dela Cruz"},
                 New DemoPayment With {.Name = "Streaming Plan", .Direction = "payable", .Category = "Subscription", .Person = "Streaming Service",
                                       .Total = 549D, .DueOffsetDays = 12, .Recurrence = "monthly"},
                 New DemoPayment With {.Name = "Loan to Maria", .Direction = "receivable", .Category = "Loan", .Person = "Maria Santos",
                                       .Total = 3000D, .DueOffsetDays = 5,
-                                      .PaidSoFar = 1000D, .PaidOffsetDays = -7, .Method = "Cash", .TxnNote = "First partial payment",
+                                      .PaidSoFar = 1000D, .PaidOffsetDays = -7, .Method = "Cash", .TxnNote = "First partial payment", .Payer = "Maria Santos",
                                       .Notes = "Borrowed for school fees. Agreed to pay back in parts."},
                 New DemoPayment With {.Name = "Loan to Pedro", .Direction = "receivable", .Category = "Loan", .Person = "Pedro Reyes",
                                       .Total = 800D, .DueOffsetDays = -1}
@@ -125,12 +130,14 @@ Namespace Services
 
                         If item.PaidSoFar > 0D Then
                             Db.ExecuteNonQuery(conn, tx,
-                                "INSERT INTO payment_transactions (payment_id, amount, paid_on, method, note) " &
-                                "VALUES (@payment, @amount, @paidOn, @method, @note)",
+                                "INSERT INTO payment_transactions (payment_id, amount, paid_on, method, reference_no, payer_name, note) " &
+                                "VALUES (@payment, @amount, @paidOn, @method, @reference, @payer, @note)",
                                 Db.P("@payment", paymentId),
                                 Db.P("@amount", item.PaidSoFar),
                                 Db.P("@paidOn", today.AddDays(item.PaidOffsetDays)),
                                 Db.P("@method", item.Method),
+                                Db.P("@reference", item.Reference),
+                                Db.P("@payer", item.Payer),
                                 Db.P("@note", item.TxnNote))
                             result.TransactionsCreated += 1
                         End If

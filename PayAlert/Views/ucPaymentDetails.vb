@@ -148,6 +148,8 @@ Namespace Views
             headRow.Controls.Add(heading)
 
             _history.Dock = DockStyle.Fill
+            ' Click a record to see its reference number, who paid, and the proof picture.
+            AddHandler _history.TransactionActivated, Sub(s, t) dlgTransactionDetails.Run(Me, t)
             _historyEmpty.Dock = DockStyle.Fill
             _historyEmpty.Icon = IconKind.History
             _historyEmpty.Compact = True
@@ -276,6 +278,9 @@ Namespace Views
                 If(receivable, "Amount received: ", "Amount paid: ") & Format.Money(txn.Amount),
                 If(receivable, "Date received: ", "Date paid: ") & Format.ShortDate(txn.PaidOn),
                 "Method: " & If(txn.Method.Length = 0, "—", txn.Method),
+                If(txn.ReferenceNo.Length = 0, Nothing, "Reference no.: " & txn.ReferenceNo),
+                If(txn.PayerName.Length = 0, Nothing, If(receivable, "Received from: ", "Paid by: ") & txn.PayerName),
+                If(txn.HasProof, "Proof: Picture attached", Nothing),
                 If(p.IsPaid, "Status: " & If(receivable, "Fully collected", "Paid in full"), "Balance left: " & Format.Money(p.Balance))}
             Dim nextPayment = outcome.NextPayment
             If nextPayment IsNot Nothing Then lines.Add("Next one due: " & Format.ShortDate(nextPayment.DueDate))

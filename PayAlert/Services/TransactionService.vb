@@ -31,14 +31,15 @@ Namespace Services
 
     ''' <summary>
     ''' Records a full or partial payment (dlgRecordPayment). In one database transaction: lock the payment, check the
-    ''' amount against the live balance, add the transaction, and let RecurrenceService create the next one when it's now Paid.
+    ''' amount against the live balance, save the proof picture (if any), add the transaction, and let RecurrenceService
+    ''' create the next one when it's now Paid.
     ''' </summary>
     Public NotInheritable Class TransactionService
 
         Private Sub New()
         End Sub
 
-        Public Shared Function Record(txn As PaymentTransaction, userId As Integer) As RecordResult
+        Public Shared Function Record(txn As PaymentTransaction, userId As Integer, Optional proof As PreparedProof = Nothing) As RecordResult
             If txn Is Nothing Then Throw New ArgumentNullException(NameOf(txn))
             If txn.Amount <= 0D Then Throw New ArgumentOutOfRangeException(NameOf(txn), "The amount must be more than zero.")
 
@@ -60,6 +61,9 @@ Namespace Services
                         Return
                     End If
 
+                    If proof IsNot Nothing Then
+                        txn.ProofId = ProofRepo.Insert(conn, tx, userId, proof.FileName, proof.ContentType, proof.Data)
+                    End If
                     txn.TxnId = TransactionRepo.Add(conn, tx, txn)
                     result.Transaction = txn
                     result.NextPayment = RecurrenceService.CreateNextIfPaid(conn, tx, txn.PaymentId, userId)

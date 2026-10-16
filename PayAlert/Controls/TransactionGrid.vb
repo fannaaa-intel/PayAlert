@@ -11,10 +11,11 @@ Imports PayAlert.Services
 Namespace Controls
 
     ''' <summary>
-    ''' Recorded payments and collections. Full mode (ucHistory): Date · Payment · Direction · Amount · Method · Note.
-    ''' Compact mode (Payment Details): Date · Amount · Method · Note. Styled and scrolled like PaymentGrid:
+    ''' Recorded payments and collections. Full mode (ucHistory): Date · Payment · Direction · Amount · Method / Reference · Note.
+    ''' Compact mode (Payment Details): Date · Amount · Method / Reference · Note. The reference number shows under the
+    ''' method, and a picture mark before the note means a proof is attached. Styled and scrolled like PaymentGrid:
     ''' custom-drawn cells, horizontal rules only, no visible scrollbar (wheel and keys scroll, the bottom fades when more is below).
-    ''' Click a header to sort; one click on a row or Enter opens the payment (full mode, not for deleted payments).
+    ''' Click a header to sort; one click on a row or Enter raises TransactionActivated (the record's details).
     ''' </summary>
     Public Class TransactionGrid
         Inherits DataGridView
@@ -32,7 +33,7 @@ Namespace Controls
         Private _sortAscending As Boolean
         Private _hoverRow As Integer = -1
 
-        ''' <summary>Raised on a click or Enter on a row whose payment still exists (full mode only).</summary>
+        ''' <summary>Raised on a click or Enter on a row.</summary>
         Public Event TransactionActivated As EventHandler(Of PaymentTransaction)
 
         Public Sub New()
@@ -92,9 +93,9 @@ Namespace Controls
                 AddColumn(ColDirection, "DIRECTION", 140, 0, DataGridViewContentAlignment.MiddleLeft)
             End If
             AddColumn(ColAmount, "AMOUNT", 0, If(_compact, 18, 14), DataGridViewContentAlignment.MiddleRight)
-            AddColumn(ColMethod, "METHOD", 0, If(_compact, 20, 15), DataGridViewContentAlignment.MiddleLeft)
-            AddColumn(ColNote, "NOTE", 0, If(_compact, 42, 28), DataGridViewContentAlignment.MiddleLeft)
-            Cursor = If(_compact, Cursors.Default, Cursors.Hand)
+            AddColumn(ColMethod, "METHOD / REF.", 0, If(_compact, 26, 19), DataGridViewContentAlignment.MiddleLeft)
+            AddColumn(ColNote, "NOTE", 0, If(_compact, 36, 24), DataGridViewContentAlignment.MiddleLeft)
+            Cursor = Cursors.Hand
             If IsHandleCreated Then ApplyScale()
         End Sub
 
@@ -120,7 +121,8 @@ Namespace Controls
 
         Private ReadOnly Property RowPixels As Integer
             Get
-                Return CInt(If(_compact, 40, 52) * S)
+                ' Room for the method and its reference number on two lines (taller with Large text).
+                Return CInt(If(_compact, If(Theme.IsLargeText, 50, 42), If(Theme.IsLargeText, 58, 52)) * S)
             End Get
         End Property
 
@@ -217,7 +219,7 @@ Namespace Controls
         End Sub
 
         Protected Overrides Function ProcessDataGridViewKey(e As KeyEventArgs) As Boolean
-            If e.KeyCode = Keys.Enter AndAlso CurrentRow IsNot Nothing AndAlso Not _compact Then
+            If e.KeyCode = Keys.Enter AndAlso CurrentRow IsNot Nothing Then
                 Activate(CurrentRow.Index)
                 Return True
             End If
@@ -225,7 +227,7 @@ Namespace Controls
         End Function
 
         Protected Overrides Function ProcessDialogKey(keyData As Keys) As Boolean
-            If keyData = Keys.Enter AndAlso CurrentRow IsNot Nothing AndAlso Not _compact Then
+            If keyData = Keys.Enter AndAlso CurrentRow IsNot Nothing Then
                 Activate(CurrentRow.Index)
                 Return True
             End If
@@ -233,9 +235,8 @@ Namespace Controls
         End Function
 
         Private Sub Activate(rowIndex As Integer)
-            If _compact Then Return
             Dim t = TryCast(Rows(rowIndex).Tag, PaymentTransaction)
-            If t IsNot Nothing AndAlso Not t.PaymentDeleted Then RaiseEvent TransactionActivated(Me, t)
+            If t IsNot Nothing Then RaiseEvent TransactionActivated(Me, t)
         End Sub
 
         Protected Overrides Sub OnMouseWheel(e As MouseEventArgs)
@@ -345,10 +346,32 @@ Namespace Controls
                 Case ColAmount
                     TextRenderer.DrawText(g, Format.Money(t.Amount), Theme.FontBodyBold, r, Theme.TextPrimary, flags Or TextFormatFlags.Right)
                 Case ColMethod
-                    TextRenderer.DrawText(g, If(t.Method.Length = 0, "—", t.Method), Theme.FontBody, r,
-                                          If(t.Method.Length = 0, Theme.TextMuted, Theme.TextPrimary), flags)
+                    Dim methodText = If(t.Method.Length = 0, "—", t.Method)
+                    Dim methodColor = If(t.Method.Length = 0, Theme.TextMuted, Theme.TextPrimary)
+                    If t.ReferenceNo.Length = 0 Then
+                        TextRenderer.DrawText(g, methodText, Theme.FontBody, r, methodColor, flags)
+                    Else
+                        ' Two lines: the method, and the reference number under it.
+                        ' Measure without EndEllipsis (it makes MeasureText return almost nothing).
+                        Dim measure = TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine
+                        Dim lineHeight = TextRenderer.MeasureText(g, "Ag", Theme.FontBody, Size.Empty, measure).Height
+                        Dim refHeight = TextRenderer.MeasureText(g, "Ag", Theme.FontCaption, Size.Empty, measure).Height
+                        Dim top = r.Y + (r.Height - lineHeight - refHeight) \ 2
+                        TextRenderer.DrawText(g, methodText, Theme.FontBody, New Rectangle(r.X, top, r.Width, lineHeight), methodColor, flags)
+                        TextRenderer.DrawText(g, "Ref. " & t.ReferenceNo, Theme.FontCaption, New Rectangle(r.X, top + lineHeight, r.Width, refHeight),
+                                              Theme.TextMuted, flags)
+                    End If
                 Case ColNote
-                    TextRenderer.DrawText(g, If(t.Note.Length = 0, "—", t.Note), Theme.FontBody, r, Theme.TextMuted, flags)
+                    Dim noteRect = r
+                    If t.HasProof Then
+                        ' A small picture mark: this record has a proof of payment.
+                        Gfx.HighQuality(g)
+                        Dim iconSize = 16 * S
+                        Icons.Draw(g, IconKind.Image, New RectangleF(r.X, r.Y + (r.Height - iconSize) / 2.0F, iconSize, iconSize), Theme.TextMuted, 1.5F * S)
+                        Dim textX = r.X + CInt(iconSize + 8 * S)
+                        noteRect = New Rectangle(textX, r.Y, r.Right - textX, r.Height)
+                    End If
+                    TextRenderer.DrawText(g, If(t.Note.Length = 0, "—", t.Note), Theme.FontBody, noteRect, Theme.TextMuted, flags)
             End Select
         End Sub
 

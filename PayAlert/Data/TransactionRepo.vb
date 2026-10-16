@@ -15,7 +15,7 @@ Namespace Data
     Public NotInheritable Class TransactionRepo
 
         Private Const HistoryColumns As String =
-            "SELECT t.txn_id, t.payment_id, t.amount, t.paid_on, t.method, t.note, t.created_at, " &
+            "SELECT t.txn_id, t.payment_id, t.amount, t.paid_on, t.method, t.reference_no, t.payer_name, t.proof_id, t.note, t.created_at, " &
             "p.name AS payment_name, p.direction, p.is_deleted " &
             "FROM payment_transactions t JOIN payments p ON p.payment_id = t.payment_id "
 
@@ -68,13 +68,39 @@ Namespace Data
         ''' <summary>Inserts a transaction and returns its new id. The caller has already checked the amount against the balance.</summary>
         Public Shared Function Add(conn As MySqlConnection, tx As MySqlTransaction, txn As PaymentTransaction) As Integer
             Return Db.Insert(conn, tx,
-                "INSERT INTO payment_transactions (payment_id, amount, paid_on, method, note) " &
-                "VALUES (@payment, @amount, @paidOn, @method, @note)",
+                "INSERT INTO payment_transactions (payment_id, amount, paid_on, method, reference_no, payer_name, proof_id, note) " &
+                "VALUES (@payment, @amount, @paidOn, @method, @reference, @payer, @proof, @note)",
                 Db.P("@payment", txn.PaymentId),
                 Db.P("@amount", txn.Amount),
                 Db.P("@paidOn", txn.PaidOn.Date),
-                Db.P("@method", If(String.IsNullOrWhiteSpace(txn.Method), Nothing, txn.Method.Trim())),
-                Db.P("@note", If(String.IsNullOrWhiteSpace(txn.Note), Nothing, txn.Note.Trim())))
+                Db.P("@method", Blank(txn.Method)),
+                Db.P("@reference", Blank(txn.ReferenceNo)),
+                Db.P("@payer", Blank(txn.PayerName)),
+                Db.P("@proof", If(txn.ProofId.HasValue, CObj(txn.ProofId.Value), Nothing)),
+                Db.P("@note", Blank(txn.Note)))
+        End Function
+
+        ''' <summary>
+        ''' Earlier records of this user with the same reference number (ignoring spaces, dashes and case), newest first,
+        ''' so Record Payment can warn about a receipt that was already used.
+        ''' </summary>
+        Public Shared Function FindByReference(userId As Integer, referenceNo As String) As List(Of PaymentTransaction)
+            Dim wanted = NormalizeReference(referenceNo)
+            If wanted.Length = 0 Then Return New List(Of PaymentTransaction)
+            Dim table = Db.Query(HistoryColumns &
+                                 "WHERE p.user_id = @user AND REPLACE(REPLACE(UPPER(t.reference_no), ' ', ''), '-', '') = @reference " &
+                                 "ORDER BY t.paid_on DESC, t.txn_id DESC",
+                                 Db.P("@user", userId), Db.P("@reference", wanted))
+            Return MapAll(table)
+        End Function
+
+        ''' <summary>A reference number as compared: no spaces or dashes, upper case.</summary>
+        Public Shared Function NormalizeReference(referenceNo As String) As String
+            Return If(referenceNo, "").Replace(" ", "").Replace("-", "").ToUpperInvariant()
+        End Function
+
+        Private Shared Function Blank(value As String) As Object
+            Return If(String.IsNullOrWhiteSpace(value), Nothing, CObj(value.Trim()))
         End Function
 
         Private Shared Function MapAll(table As DataTable) As List(Of PaymentTransaction)
@@ -87,6 +113,9 @@ Namespace Data
                     .PaidOn = Convert.ToDateTime(row("paid_on")).Date,
                     .Method = If(row.IsNull("method"), "", CStr(row("method"))),
                     .Note = If(row.IsNull("note"), "", CStr(row("note"))),
+                    .ReferenceNo = If(row.IsNull("reference_no"), "", CStr(row("reference_no"))),
+                    .PayerName = If(row.IsNull("payer_name"), "", CStr(row("payer_name"))),
+                    .ProofId = If(row.IsNull("proof_id"), CType(Nothing, Integer?), Convert.ToInt32(row("proof_id"))),
                     .CreatedAt = If(row.IsNull("created_at"), DateTime.MinValue, Convert.ToDateTime(row("created_at"))),
                     .PaymentName = CStr(row("payment_name")),
                     .Direction = CStr(row("direction")),
