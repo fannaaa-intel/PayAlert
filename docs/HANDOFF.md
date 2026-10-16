@@ -5,8 +5,8 @@ _Updated in session 3 (2026-10-16), after building the client revision (phases 1
 ## Where we stopped
 - All 11 phases are done and committed on `main` (Phase 6 = `005b9a7`, Phase 7 = `e4ab477`, Phase 8 = `57c3145`, Phase 9 = `279c927`, Phase 10 = `5528c33`, Phase 11 = `284e1db` "Phase 11: polish").
 - **Pushed** to https://github.com/fannaaa-intel/PayAlert.git (`main`) on 2026-10-14 at the user's request. Push again only when the user says "push".
-- **Session 3 (2026-10-16):** built the client revision (PLAN.md §12): Phase 12 easier to use (Text size Normal/Large, one-click open), 13 payment reference (reference no., payer, proof picture), 14 advance payment, 15 Payment Summary report. All built and tested offscreen in both text sizes; **not committed yet**, waiting for the user's OK.
-- **Next:** after the user's OK, commit each phase as `Phase N: <summary>` and update WORK_ORDER.md. Then the manual check at real 150% scaling on the client PC, in both text sizes.
+- **Session 3 (2026-10-16):** built the client revision (PLAN.md §12): Phase 12 easier to use (Text size Normal/Large, one-click open), 13 payment reference (reference no., payer, proof picture), 14 advance payment, 15 Payment Summary report. All built and tested offscreen in both text sizes. Committed as Phase 12 `6c706b6`, 13 `a5afc53`, 14 `5f5503c`, 15 `abe10d4`, and pushed to `origin/main` at the user's request. The user's real database already has the revision columns (checked read-only).
+- **Next:** nothing planned. Manual check left: real 150% scaling on the client PC, in both text sizes.
 
 ## How the user works
 - One phase at a time. Build, test, show the result, and wait for the user's OK before committing or starting the next phase.

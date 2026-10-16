@@ -3,7 +3,7 @@
 The 11 build phases from [PLAN.md](../PLAN.md) §9 and the client revision phases 12 to 15 (§12), with status and a test checklist for each.
 Rules: one phase at a time. After each phase, build, test, then commit as `Phase N: <summary>` once the user confirms. **Push only when the user says "push".**
 
-_Last updated: 2026-10-16 (session 3: client revision, phases 12 to 15 built and tested, waiting for the user's OK to commit)_
+_Last updated: 2026-10-16 (session 3: client revision, phases 12 to 15 done, pushed to GitHub)_
 
 | # | Work order | Status | Commit |
 |---|---|---|---|
@@ -18,10 +18,10 @@ _Last updated: 2026-10-16 (session 3: client revision, phases 12 to 15 built and
 | 9 | Settings and profile | ✅ Done | `279c927` |
 | 10 | Admin | ✅ Done | `5528c33` |
 | 11 | Polish | ✅ Done | `284e1db` |
-| 12 | Easier to use (text size, one-click open) | 🟡 Built and tested, waiting for OK | |
-| 13 | Payment reference (reference no., payer, proof) | 🟡 Built and tested, waiting for OK | |
-| 14 | Advance payment | 🟡 Built and tested, waiting for OK | |
-| 15 | Payment Summary report | 🟡 Built and tested, waiting for OK | |
+| 12 | Easier to use (text size, one-click open) | ✅ Done | `6c706b6` |
+| 13 | Payment reference (reference no., payer, proof) | ✅ Done | `a5afc53` |
+| 14 | Advance payment | ✅ Done | `5f5503c` |
+| 15 | Payment Summary report | ✅ Done | `abe10d4` |
 
 Pushed to GitHub (`origin/main`) on 2026-10-14 at the user's request.
 
@@ -108,7 +108,7 @@ Done when: full walkthrough with no crashes; every screen matches §6, §6A and 
 - [x] Checked at the 150% layout size (1280×688 maximized) and at 1920×1040; fixed Payment Details. Still to do by hand: one look at real 150% scaling on the client PC
 - [x] Final README; exe icon (`PayAlert/Resources/PayAlert.ico`). Replace the logo if the client sends theirs
 
-## 12. Easier to use 🟡
+## 12. Easier to use ✅
 Done when: every screen fits and nothing important is cut off in both text sizes; the setting saves and reloads.
 - [x] Settings → Preferences → **Text size**: Normal / Large (fonts × 1.2), saved per user (`user_settings.large_text`); the main window reopens on Settings in the new size, with a toast
 - [x] Login and Register always Normal; the sidebar is 248px wide in Large
@@ -116,7 +116,7 @@ Done when: every screen fits and nothing important is cut off in both text sizes
 - [x] Large checked on every screen at 1280×688: sidebar, dashboard totals, Payments headers, History filters, Settings, Admin
 - [x] `SchemaUpgrade` adds the new columns to an existing database at startup (tested on a database made with the original 01 to 03 scripts, and run twice)
 
-## 13. Payment reference 🟡
+## 13. Payment reference ✅
 Done when: a recorded payment shows its reference, payer and proof; a reused reference warns; a bad file is refused inline.
 - [x] Record Payment: Reference no., Paid by / Received from (prefilled), Proof of payment (ProofPicker), Note; methods Cash, GCash, Maya, Bank Transfer, Card, Other
 - [x] Proof pictures: turned upright, flattened on white, ≤ 1600 px, ≤ 600 KB (XAMPP 1 MB packet); a non-picture is refused with a friendly inline message
@@ -125,7 +125,7 @@ Done when: a recorded payment shows its reference, payer and proof; a reused ref
 - [x] Lists show "Ref. …" under the method and a picture mark for proofs; History search finds reference numbers and payer names
 - [x] Another account can't read a proof (the repository checks user_id)
 
-## 14. Advance payment 🟡
+## 14. Advance payment ✅
 Done when: overpaying a repeating payment fills the next ones in order and their balances update; one-time payments refuse it.
 - [x] Record Payment on a repeating payment accepts up to balance + 12 periods; the hint shows "+ ₱X ahead (N months)"
 - [x] Test: Streaming Plan ₱549 monthly, record ₱1,400 → this one Paid, next month Paid, the month after Partially Paid (₱247 left); exactly 3 in the series
@@ -134,7 +134,7 @@ Done when: overpaying a repeating payment fills the next ones in order and their
 - [x] A deleted later payment blocks the advance and nothing is saved (one transaction)
 - [x] Success dialog: amount, "For this one", "Paid ahead", "Next to pay"
 
-## 15. Payment Summary report 🟡
+## 15. Payment Summary report ✅
 Done when: totals per method match History for the same range; CSV opens in Excel.
 - [x] Sidebar **Summary** → Payment Summary: This month / Last month / This year / All time or From/To, and direction
 - [x] Totals strip (Total, Paid, Collected) and one bar per method, biggest first, "Not set" last; "gcash" and "GCash" are one line
