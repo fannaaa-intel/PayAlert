@@ -10,6 +10,8 @@ Namespace Models
         ''' <summary>1, 3 or 7.</summary>
         Public Property DefaultReminderDays As Integer = 3
         Public Property Currency As String = "PHP"
+        ''' <summary>Text size: False = Normal, True = Large (easier to read).</summary>
+        Public Property LargeText As Boolean
     End Class
 
 End Namespace

@@ -34,6 +34,11 @@ Public Enum IconKind
     Lock
     ChevronDown
     ChevronRight
+    TextSize
+    Chart
+    Image
+    Hash
+    Advance
 End Enum
 
 ''' <summary>
@@ -223,6 +228,37 @@ Public NotInheritable Class Icons
                     Case IconKind.Edit
                         g.DrawLines(pen, {P(14.5F, 5.5F), P(18.5F, 9.5F), P(9, 19), P(5, 19), P(5, 15), P(14.5F, 5.5F)})
                         g.DrawLine(pen, P(12.5F, 7.5F), P(16.5F, 11.5F))
+
+                    Case IconKind.TextSize
+                        ' A large A beside a small one.
+                        g.DrawLines(pen, {P(2.5F, 19), P(8.5F, 4.5F), P(14.5F, 19)})
+                        g.DrawLine(pen, P(5, 13.5F), P(12, 13.5F))
+                        g.DrawLines(pen, {P(14.5F, 19), P(18, 10.5F), P(21.5F, 19)})
+                        g.DrawLine(pen, P(15.8F, 16), P(20.2F, 16))
+
+                    Case IconKind.Chart
+                        ' Horizontal bars of different lengths on a baseline.
+                        g.DrawLine(pen, P(4, 3.5F), P(4, 20.5F))
+                        g.DrawLine(pen, P(7.5F, 7), P(19.5F, 7))
+                        g.DrawLine(pen, P(7.5F, 12), P(14.5F, 12))
+                        g.DrawLine(pen, P(7.5F, 17), P(17, 17))
+
+                    Case IconKind.Image
+                        ' A photo: frame, sun and hills.
+                        DrawRound(g, pen, R(3, 4.5F, 18, 15), 2.5F * k)
+                        g.DrawEllipse(pen, R(14.5F, 7.5F, 3.5F, 3.5F))
+                        g.DrawLines(pen, {P(3.5F, 17.5F), P(9, 11.5F), P(13.5F, 16), P(15.5F, 14), P(20.5F, 18.5F)})
+
+                    Case IconKind.Hash
+                        g.DrawLine(pen, P(10, 4), P(8, 20))
+                        g.DrawLine(pen, P(16, 4), P(14, 20))
+                        g.DrawLine(pen, P(4.5F, 9), P(20, 9))
+                        g.DrawLine(pen, P(4, 15), P(19.5F, 15))
+
+                    Case IconKind.Advance
+                        ' Two forward chevrons: paid ahead.
+                        g.DrawLines(pen, {P(5, 6), P(11, 12), P(5, 18)})
+                        g.DrawLines(pen, {P(12.5F, 6), P(18.5F, 12), P(12.5F, 18)})
                 End Select
             End Using
         End Using

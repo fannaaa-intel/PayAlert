@@ -16,7 +16,7 @@ Namespace Views
     ''' <summary>
     ''' History (§7, manuscript Figure 7): every recorded payment and collection. Filters: a quick range or From/To dates,
     ''' direction, and a payment search. The footer adds up Total Paid (I Owe) and Total Collected (Owed to Me) for
-    ''' what is shown. Double-click or Enter opens the payment.
+    ''' what is shown. One click on a row (or Enter) opens the payment.
     ''' </summary>
     Public Class ucHistory
         Inherits PAView
@@ -41,33 +41,36 @@ Namespace Views
             Title = "History"
             Subtitle = "Every payment and collection you've recorded"
 
-            ' Row 1: quick ranges, search on the right.
+            ' Row 1: quick ranges, how many are showing, and search on the right.
+            Dim large = Theme.IsLargeText
             _range.SetItems(RangeNames)
             _range.Dock = DockStyle.Left
             _range.Width = 470
             _search.Icon = IconKind.Search
             _search.PlaceholderText = "Search by payment, method or note"
             _search.Dock = DockStyle.Right
-            _search.Width = 300
+            _search.Width = If(large, 360, 300)
+            _countLabel.Dock = DockStyle.Fill
+            _countLabel.TextAlign = ContentAlignment.MiddleRight
+            _countLabel.Padding = New Padding(0, 0, 16, 0)
+            _countLabel.AutoEllipsis = True
+            _countLabel.Font = Theme.FontCaption
+            _countLabel.ForeColor = Theme.TextMuted
             Dim row1 As New Panel() With {.Dock = DockStyle.Top, .Height = 42}
+            row1.Controls.Add(_countLabel)
             row1.Controls.Add(_range)
             row1.Controls.Add(_search)
 
-            ' Row 2: From / To, direction, and how many are showing.
+            ' Row 2: From / To and direction.
             _from.Dock = DockStyle.Left
-            _from.Width = 256
+            _from.Width = If(large, 290, 256)
             _to.Dock = DockStyle.Left
-            _to.Width = 240
+            _to.Width = If(large, 270, 240)
             _direction.SetItems("All", "I Owe", "Owed to Me")
             _direction.Dock = DockStyle.Left
             _direction.Width = 280
-            _countLabel.Dock = DockStyle.Fill
-            _countLabel.TextAlign = ContentAlignment.MiddleRight
-            _countLabel.Font = Theme.FontCaption
-            _countLabel.ForeColor = Theme.TextMuted
             Dim row2 As New Panel() With {.Dock = DockStyle.Top, .Height = 42}
             ' Docked left-to-right: the last added docks first.
-            row2.Controls.Add(_countLabel)
             row2.Controls.Add(_direction)
             row2.Controls.Add(New Panel() With {.Dock = DockStyle.Left, .Width = 16})
             row2.Controls.Add(_to)
@@ -181,7 +184,7 @@ Namespace Views
             _grid.SetRows(shown)
 
             If Not DatesValid Then
-                _countLabel.Text = """From"" is after ""To"". Pick an earlier From date."
+                _countLabel.Text = """From"" is after ""To""."
                 _countLabel.ForeColor = Theme.OverdueText
             Else
                 _countLabel.Text = If(_all.Count = 0, "", shown.Count & " of " & _all.Count & If(_all.Count = 1, " record", " records"))

@@ -14,7 +14,7 @@ Namespace Controls
     ''' Recorded payments and collections. Full mode (ucHistory): Date · Payment · Direction · Amount · Method · Note.
     ''' Compact mode (Payment Details): Date · Amount · Method · Note. Styled and scrolled like PaymentGrid:
     ''' custom-drawn cells, horizontal rules only, no visible scrollbar (wheel and keys scroll, the bottom fades when more is below).
-    ''' Click a header to sort; double-click or Enter opens the payment (full mode, not for deleted payments).
+    ''' Click a header to sort; one click on a row or Enter opens the payment (full mode, not for deleted payments).
     ''' </summary>
     Public Class TransactionGrid
         Inherits DataGridView
@@ -32,7 +32,7 @@ Namespace Controls
         Private _sortAscending As Boolean
         Private _hoverRow As Integer = -1
 
-        ''' <summary>Raised on double-click or Enter on a row whose payment still exists (full mode only).</summary>
+        ''' <summary>Raised on a click or Enter on a row whose payment still exists (full mode only).</summary>
         Public Event TransactionActivated As EventHandler(Of PaymentTransaction)
 
         Public Sub New()
@@ -211,8 +211,8 @@ Namespace Controls
 
         ' ---------------------------------------------------------------- input
 
-        Protected Overrides Sub OnCellDoubleClick(e As DataGridViewCellEventArgs)
-            MyBase.OnCellDoubleClick(e)
+        Protected Overrides Sub OnCellClick(e As DataGridViewCellEventArgs)
+            MyBase.OnCellClick(e)
             If e.RowIndex >= 0 Then Activate(e.RowIndex)
         End Sub
 

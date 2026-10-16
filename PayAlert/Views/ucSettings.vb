@@ -14,7 +14,8 @@ Namespace Views
 
     ''' <summary>
     ''' Settings (§7): cards for Account (Profile, Change Password), Notifications (on/off, default reminder),
-    ''' Preferences (currency, read-only) and Log out. Changes save the moment they're made and confirm with a toast.
+    ''' Preferences (text size, currency read-only) and Log out. Changes save the moment they're made and confirm with a toast;
+    ''' a new text size reopens the main window in that size.
     ''' </summary>
     Public Class ucSettings
         Inherits PAView
@@ -26,10 +27,12 @@ Namespace Views
         Private ReadOnly _passwordRow As New SettingRow()
         Private ReadOnly _notifyRow As New SettingRow()
         Private ReadOnly _reminderRow As New SettingRow()
+        Private ReadOnly _textSizeRow As New SettingRow()
         Private ReadOnly _currencyRow As New SettingRow()
         Private ReadOnly _logoutRow As New SettingRow()
         Private ReadOnly _notify As New ToggleSwitch()
         Private ReadOnly _reminder As New SegmentedControl()
+        Private ReadOnly _textSize As New SegmentedControl()
         Private ReadOnly _logout As New DangerButton()
         Private _settings As UserSettings
         Private _loading As Boolean
@@ -54,23 +57,31 @@ Namespace Views
             _notify.Size = New Size(52, 30)
             _notifyRow.Icon = IconKind.Bell
             _notifyRow.Title = "Reminders"
-            _notifyRow.Description = "Alerts inside PayAlert before, on, and after due dates."
+            _notifyRow.Description = "Alerts before and after due dates."
             _notifyRow.Trailing = _notify
             _reminder.SetItems("1 day", "3 days", "7 days")
             _reminder.Size = New Size(246, Theme.FieldHeight)
             _reminderRow.Icon = IconKind.Clock
             _reminderRow.Title = "Default reminder"
-            _reminderRow.Description = "Used for each new payment."
+            _reminderRow.Description = "For new payments."
             _reminderRow.Trailing = _reminder
             _reminderRow.ShowRule = False
             AddHandler _notify.CheckedChanged, AddressOf NotifyChanged
             AddHandler _reminder.SelectedIndexChanged, AddressOf ReminderChanged
 
+            _textSize.SetItems("Normal", "Large")
+            _textSize.Size = New Size(190, Theme.FieldHeight)
+            _textSizeRow.Icon = IconKind.TextSize
+            _textSizeRow.Title = "Text size"
+            _textSizeRow.Description = "Easier to read."
+            _textSizeRow.Trailing = _textSize
+            AddHandler _textSize.SelectedIndexChanged, AddressOf TextSizeChanged
+
             Dim currency As New Label() With {
                 .Text = "PHP  (₱)", .AutoSize = True, .Font = Theme.FontBodyBold, .ForeColor = Theme.TextPrimary, .BackColor = Color.Transparent}
             _currencyRow.Icon = IconKind.Payments
             _currencyRow.Title = "Currency"
-            _currencyRow.Description = "Amounts show as ₱1,500.00. Fixed in this version."
+            _currencyRow.Description = "Amounts show as ₱1,500.00."
             _currencyRow.Trailing = currency
             _currencyRow.ShowRule = False
 
@@ -93,7 +104,7 @@ Namespace Views
             columns.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
             columns.Controls.Add(Column(New Padding(0, 0, 8, 0),
                                         SettingsCard("Account", _profileRow, _passwordRow),
-                                        SettingsCard("Preferences", _currencyRow)), 0, 0)
+                                        SettingsCard("Preferences", _textSizeRow, _currencyRow)), 0, 0)
             columns.Controls.Add(Column(New Padding(8, 0, 0, 0),
                                         SettingsCard("Notifications", _notifyRow, _reminderRow),
                                         SettingsCard("Session", _logoutRow)), 1, 0)
@@ -147,6 +158,7 @@ Namespace Views
             _loading = True
             _notify.SetCheckedSilently(_settings.NotificationsEnabled)
             _reminder.SelectedIndex = Math.Max(0, Array.IndexOf(ReminderChoices, _settings.DefaultReminderDays))
+            _textSize.SelectedIndex = If(_settings.LargeText, 1, 0)
             _loading = False
         End Sub
 
@@ -188,6 +200,23 @@ Namespace Views
             End If
             Dim days = _settings.DefaultReminderDays
             PAToast.Notify(FindForm(), "Default reminder: " & days & If(days = 1, " day", " days") & " before", Tone.Success)
+        End Sub
+
+        Private Sub TextSizeChanged(sender As Object, e As EventArgs)
+            If _loading OrElse _settings Is Nothing OrElse _textSize.SelectedIndex < 0 Then Return
+            Dim large = _textSize.SelectedIndex = 1
+            If large = _settings.LargeText Then Return
+            _settings.LargeText = large
+            If Not SaveSettings() Then
+                _settings.LargeText = Not large
+                _loading = True
+                _textSize.SelectedIndex = If(_settings.LargeText, 1, 0)
+                _loading = False
+                Return
+            End If
+            ' Rebuild after this click finishes: the main window (and this screen) is replaced.
+            Dim main = TryCast(FindForm(), frmMain)
+            If main IsNot Nothing Then BeginInvoke(New MethodInvoker(AddressOf main.ApplyTextSize))
         End Sub
 
         Private Sub ChangePasswordClicked(sender As Object, e As EventArgs)

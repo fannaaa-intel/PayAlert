@@ -23,7 +23,7 @@ Namespace Views
 
     ''' <summary>
     ''' Payments (§7): status tabs with counts, a direction toggle, a category filter and live search over one grid.
-    ''' Double-click or Enter opens Payment Details. Each tab and filter has its own empty state.
+    ''' One click on a row (or Enter) opens Payment Details. Each tab and filter has its own empty state.
     ''' </summary>
     Public Class ucPayments
         Inherits PAView
@@ -52,7 +52,7 @@ Namespace Views
             MyBase.New()
             SidebarKey = "payments"
             Title = "Payments"
-            Subtitle = "View and manage your reminders"
+            Subtitle = "Click a payment to open it. Use the tabs and filters to find one."
 
             Dim add As New PrimaryButton() With {.Text = "Add Payment", .Icon = IconKind.Plus, .Size = New Drawing.Size(150, Theme.ButtonHeight)}
             AddHandler add.Click, Sub(s, e) Navigator.Push(New ucPaymentEditor())

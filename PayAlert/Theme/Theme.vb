@@ -117,35 +117,165 @@ Public NotInheritable Class Theme
     Public Const SizeBigNumber As Single = 20.0F
     Public Const SizeDialogTitle As Single = 14.0F
 
+    ''' <summary>
+    ''' How much bigger text is than the §6 sizes: 1 for Normal, <see cref="LargeTextScale"/> for Large (Settings →
+    ''' Text size, kept per user). Set it with <see cref="SetLargeText"/> before building a window: controls take
+    ''' the fonts below when they are created or painted.
+    ''' </summary>
+    Public Const LargeTextScale As Single = 1.2F
+    Private Shared _textScale As Single = 1.0F
+
+    Public Shared ReadOnly Property TextScale As Single
+        Get
+            Return _textScale
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property IsLargeText As Boolean
+        Get
+            Return _textScale > 1.0F
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Switches every shared font between the Normal and Large sizes. Windows that are already open keep the fonts
+    ''' they were built with (old instances are never disposed, since controls may still use them); open a new window to apply.
+    ''' </summary>
+    Public Shared Sub SetLargeText(large As Boolean)
+        Dim wanted = If(large, LargeTextScale, 1.0F)
+        If wanted = _textScale AndAlso _fontBody IsNot Nothing Then Return
+        _textScale = wanted
+        BuildFonts()
+    End Sub
+
+    ''' <summary>A §6 point size at the current text size, rounded to half points so text stays crisp.</summary>
+    Public Shared Function TextSize(points As Single) As Single
+        Return CSng(Math.Round(points * _textScale * 2.0F) / 2.0F)
+    End Function
+
     ' Shared font instances live for the whole app; controls use them and never dispose them.
-    Public Shared ReadOnly FontPageTitle As New Font(FontFamilyName, SizePageTitle, FontStyle.Bold)
-    Public Shared ReadOnly FontSection As New Font(SemiboldFamilyName, SizeSection, FontStyle.Regular)
-    Public Shared ReadOnly FontBody As New Font(FontFamilyName, SizeBody, FontStyle.Regular)
-    Public Shared ReadOnly FontBodyBold As New Font(FontFamilyName, SizeBody, FontStyle.Bold)
-    Public Shared ReadOnly FontBodySemibold As New Font(SemiboldFamilyName, SizeBody, FontStyle.Regular)
-    Public Shared ReadOnly FontCaption As New Font(FontFamilyName, SizeCaption, FontStyle.Regular)
-    Public Shared ReadOnly FontCaptionBold As New Font(FontFamilyName, SizeCaption, FontStyle.Bold)
-    Public Shared ReadOnly FontSmallCaps As New Font(FontFamilyName, 7.5F, FontStyle.Bold)
-    Public Shared ReadOnly FontBigNumber As New Font(FontFamilyName, SizeBigNumber, FontStyle.Bold)
-    Public Shared ReadOnly FontDialogTitle As New Font(FontFamilyName, SizeDialogTitle, FontStyle.Bold)
-    Public Shared ReadOnly FontButton As New Font(SemiboldFamilyName, SizeBody, FontStyle.Regular)
-    Public Shared ReadOnly FontWordmark As New Font(FontFamilyName, 13.0F, FontStyle.Bold)
+    Private Shared _fontPageTitle, _fontSection, _fontBody, _fontBodyBold, _fontBodySemibold, _fontCaption, _fontCaptionBold,
+                   _fontSmallCaps, _fontBigNumber, _fontDialogTitle, _fontButton, _fontWordmark As Font
+
+    Private Shared Sub BuildFonts()
+        _fontPageTitle = New Font(FontFamilyName, TextSize(SizePageTitle), FontStyle.Bold)
+        _fontSection = New Font(SemiboldFamilyName, TextSize(SizeSection), FontStyle.Regular)
+        _fontBody = New Font(FontFamilyName, TextSize(SizeBody), FontStyle.Regular)
+        _fontBodyBold = New Font(FontFamilyName, TextSize(SizeBody), FontStyle.Bold)
+        _fontBodySemibold = New Font(SemiboldFamilyName, TextSize(SizeBody), FontStyle.Regular)
+        _fontCaption = New Font(FontFamilyName, TextSize(SizeCaption), FontStyle.Regular)
+        _fontCaptionBold = New Font(FontFamilyName, TextSize(SizeCaption), FontStyle.Bold)
+        _fontSmallCaps = New Font(FontFamilyName, TextSize(7.5F), FontStyle.Bold)
+        _fontBigNumber = New Font(FontFamilyName, TextSize(SizeBigNumber), FontStyle.Bold)
+        _fontDialogTitle = New Font(FontFamilyName, TextSize(SizeDialogTitle), FontStyle.Bold)
+        _fontButton = New Font(SemiboldFamilyName, TextSize(SizeBody), FontStyle.Regular)
+        _fontWordmark = New Font(FontFamilyName, 13.0F, FontStyle.Bold)
+    End Sub
+
+    Private Shared Sub EnsureFonts()
+        If _fontBody Is Nothing Then BuildFonts()
+    End Sub
+
+    Public Shared ReadOnly Property FontPageTitle As Font
+        Get
+            EnsureFonts()
+            Return _fontPageTitle
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontSection As Font
+        Get
+            EnsureFonts()
+            Return _fontSection
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontBody As Font
+        Get
+            EnsureFonts()
+            Return _fontBody
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontBodyBold As Font
+        Get
+            EnsureFonts()
+            Return _fontBodyBold
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontBodySemibold As Font
+        Get
+            EnsureFonts()
+            Return _fontBodySemibold
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontCaption As Font
+        Get
+            EnsureFonts()
+            Return _fontCaption
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontCaptionBold As Font
+        Get
+            EnsureFonts()
+            Return _fontCaptionBold
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontSmallCaps As Font
+        Get
+            EnsureFonts()
+            Return _fontSmallCaps
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontBigNumber As Font
+        Get
+            EnsureFonts()
+            Return _fontBigNumber
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontDialogTitle As Font
+        Get
+            EnsureFonts()
+            Return _fontDialogTitle
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FontButton As Font
+        Get
+            EnsureFonts()
+            Return _fontButton
+        End Get
+    End Property
+
+    ''' <summary>The sidebar wordmark: part of the logo, so it keeps one size.</summary>
+    Public Shared ReadOnly Property FontWordmark As Font
+        Get
+            EnsureFonts()
+            Return _fontWordmark
+        End Get
+    End Property
 
     ' Factories kept for callers that own and dispose their fonts.
     Public Shared Function PageTitleFont() As Font
-        Return New Font(FontFamilyName, SizePageTitle, FontStyle.Bold)
+        Return New Font(FontFamilyName, TextSize(SizePageTitle), FontStyle.Bold)
     End Function
 
     Public Shared Function SectionFont() As Font
-        Return New Font(SemiboldFamilyName, SizeSection, FontStyle.Regular)
+        Return New Font(SemiboldFamilyName, TextSize(SizeSection), FontStyle.Regular)
     End Function
 
     Public Shared Function BodyFont(Optional style As FontStyle = FontStyle.Regular) As Font
-        Return New Font(FontFamilyName, SizeBody, style)
+        Return New Font(FontFamilyName, TextSize(SizeBody), style)
     End Function
 
     Public Shared Function CaptionFont(Optional style As FontStyle = FontStyle.Regular) As Font
-        Return New Font(FontFamilyName, SizeCaption, style)
+        Return New Font(FontFamilyName, TextSize(SizeCaption), style)
     End Function
 
     ' ---------- spacing and sizes (logical pixels at 96 DPI) ----------
@@ -165,6 +295,7 @@ Public NotInheritable Class Theme
     Public Const TitleAccentWidth As Integer = 40
     Public Const TitleAccentHeight As Integer = 3
     Public Const SidebarWidth As Integer = 220
+    Public Const SidebarWidthLarge As Integer = 248
 
     ' ---------- DPI ----------
     Private Shared _scale As Single

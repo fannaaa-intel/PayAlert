@@ -22,6 +22,8 @@ Namespace Forms
 
         ''' <summary>Raised after the user confirms Log out.</summary>
         Public Event LoggedOut As EventHandler
+        ''' <summary>Raised after the user picks another text size; the app reopens the main window in that size.</summary>
+        Public Event TextSizeChanged As EventHandler
 
         Private NotInheritable Class NavItem
             Public Key As String
@@ -47,7 +49,14 @@ Namespace Forms
         ''' <summary>Re-checks reminders every 5 minutes while the app is open (§3.7).</summary>
         Private ReadOnly _reminderTimer As New Timer() With {.Interval = 5 * 60 * 1000}
 
-        Public Sub New()
+        Private ReadOnly _startKey As String
+
+        ''' <summary>A toast shown once the window opens (e.g. after the text size changed).</summary>
+        Public Property StartNotice As String
+
+        ''' <summary>Opens on <paramref name="startKey"/> (a sidebar section), or the Dashboard.</summary>
+        Public Sub New(Optional startKey As String = Nothing)
+            _startKey = If(String.IsNullOrEmpty(startKey), "dashboard", startKey)
             SuspendLayout()
             AutoScaleDimensions = New SizeF(96.0F, 96.0F)
             AutoScaleMode = AutoScaleMode.Dpi
@@ -86,14 +95,16 @@ Namespace Forms
             MyBase.OnShown(e)
             RunReminders()
             _reminderTimer.Start()
-            Open("dashboard")
+            Open(_startKey)
+            If Not String.IsNullOrEmpty(StartNotice) Then PAToast.Notify(Me, StartNotice, Tone.Success)
         End Sub
 
         ' ---------------------------------------------------------------- sidebar
 
         Private Sub BuildSidebar()
             _sidebar.Dock = DockStyle.Left
-            _sidebar.Width = Theme.SidebarWidth
+            ' Large text needs a little more room for "Notifications" and its badge.
+            _sidebar.Width = If(Theme.IsLargeText, Theme.SidebarWidthLarge, Theme.SidebarWidth)
             _sidebar.BackColor = Theme.Surface
             AddHandler _sidebar.Paint, AddressOf PaintSidebar
             ' Keep Log out pinned to the bottom of the sidebar's real height (anchoring breaks when the panel
@@ -109,7 +120,7 @@ Namespace Forms
             For Each item In _items
                 If item.AdminOnly AndAlso Not Session.IsAdmin Then Continue For
                 Dim button As New SidebarButton() With {
-                    .Text = item.Text, .Icon = item.Icon, .Location = New Point(12, y), .Size = New Size(196, 44),
+                    .Text = item.Text, .Icon = item.Icon, .Location = New Point(12, y), .Size = New Size(_sidebar.Width - 24, 44),
                     .TabIndex = index, .Tag = item.Key}
                 AddHandler button.Click, Sub(s, e) Open(CStr(DirectCast(s, SidebarButton).Tag))
                 _sidebar.Controls.Add(button)
@@ -120,7 +131,7 @@ Namespace Forms
 
             _logoutButton.Text = "Log out"
             _logoutButton.Icon = IconKind.Logout
-            _logoutButton.Size = New Size(196, 44)
+            _logoutButton.Size = New Size(_sidebar.Width - 24, 44)
             _logoutButton.Location = New Point(12, 0)
             _logoutButton.TabIndex = index
             AddHandler _logoutButton.Click, Sub(s, e) RequestLogOut()
@@ -181,6 +192,11 @@ Namespace Forms
         ''' <summary>Repaints the signed-in user block after the profile changes.</summary>
         Public Sub RefreshUserBlock()
             _sidebar.Invalidate()
+        End Sub
+
+        ''' <summary>Called by Settings after the new text size is saved: the main window is rebuilt in that size.</summary>
+        Public Sub ApplyTextSize()
+            RaiseEvent TextSizeChanged(Me, EventArgs.Empty)
         End Sub
 
         ''' <summary>Asks for confirmation, then logs out (from the sidebar or Settings).</summary>

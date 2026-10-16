@@ -135,11 +135,11 @@ Namespace Views
             _ringCaption.BackColor = Color.Transparent
 
             _owe.Dock = DockStyle.Bottom
-            _owe.Height = 46
+            _owe.Height = If(Theme.IsLargeText, 54, 46)
             _owe.Icon = IconKind.ArrowOut
             _owe.Caption = "Total I Owe"
             _owed.Dock = DockStyle.Bottom
-            _owed.Height = 46
+            _owed.Height = If(Theme.IsLargeText, 54, 46)
             _owed.Icon = IconKind.ArrowIn
             _owed.Caption = "Total Owed to Me"
             _owed.ShowRule = False
@@ -330,9 +330,10 @@ Namespace Views
                 Dim textX = CInt(disc + Px(12))
                 Dim textWidth = Width - textX - valueSize.Width - PxI(8)
                 Dim captionHeight = TextRenderer.MeasureText(g, "Ag", Theme.FontBodySemibold, Size.Empty, flags).Height
-                Dim top = (Height - captionHeight - PxI(16)) \ 2
+                Dim detailHeight = TextRenderer.MeasureText(g, "Ag", Theme.FontCaption, Size.Empty, flags).Height
+                Dim top = (Height - captionHeight - detailHeight) \ 2
                 TextRenderer.DrawText(g, _caption, Theme.FontBodySemibold, New Rectangle(textX, top, textWidth, captionHeight), Theme.TextPrimary, flags)
-                TextRenderer.DrawText(g, _detail, Theme.FontCaption, New Rectangle(textX, top + captionHeight, textWidth, PxI(16)), Theme.TextMuted, flags)
+                TextRenderer.DrawText(g, _detail, Theme.FontCaption, New Rectangle(textX, top + captionHeight, textWidth, detailHeight), Theme.TextMuted, flags)
             End Sub
         End Class
 

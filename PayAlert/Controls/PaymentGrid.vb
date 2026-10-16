@@ -14,7 +14,7 @@ Namespace Controls
     ''' The payment list (§7 ucPayments): Due · Name · Category · Person · Total · Balance · Status.
     ''' A DataGridView styled per §6 and custom-drawn: the Due cell is a compact due tag whose colored stub is the
     ''' row's status edge, Name shows the direction under it, Status is a pill. Click a header to sort,
-    ''' double-click or Enter to open. The stock scrollbar is hidden; the mouse wheel and keyboard scroll.
+    ''' one click (easier than a double-click) or Enter to open. The stock scrollbar is hidden; the mouse wheel and keyboard scroll.
     ''' </summary>
     Public Class PaymentGrid
         Inherits DataGridView
@@ -32,7 +32,7 @@ Namespace Controls
         Private _sortAscending As Boolean = True
         Private _hoverRow As Integer = -1
 
-        ''' <summary>Raised on double-click or Enter.</summary>
+        ''' <summary>Raised on a click on a row, or Enter.</summary>
         Public Event PaymentActivated As EventHandler(Of PaymentSummary)
 
         Public Sub New()
@@ -69,11 +69,11 @@ Namespace Controls
             DefaultCellStyle.SelectionForeColor = Theme.TextPrimary
 
             AddColumn(ColDue, "DUE", 96, 0, DataGridViewContentAlignment.MiddleLeft)
-            AddColumn(ColName, "PAYMENT", 0, 30, DataGridViewContentAlignment.MiddleLeft)
-            AddColumn(ColCategory, "CATEGORY", 0, 17, DataGridViewContentAlignment.MiddleLeft)
-            AddColumn(ColPerson, "PERSON / COMPANY", 0, 19, DataGridViewContentAlignment.MiddleLeft)
-            AddColumn(ColTotal, "TOTAL", 0, 13, DataGridViewContentAlignment.MiddleRight)
-            AddColumn(ColBalance, "BALANCE", 0, 13, DataGridViewContentAlignment.MiddleRight)
+            AddColumn(ColName, "PAYMENT", 0, 29, DataGridViewContentAlignment.MiddleLeft)
+            AddColumn(ColCategory, "CATEGORY", 0, 16, DataGridViewContentAlignment.MiddleLeft)
+            AddColumn(ColPerson, If(Theme.IsLargeText, "PERSON", "PERSON / COMPANY"), 0, 18, DataGridViewContentAlignment.MiddleLeft)
+            AddColumn(ColTotal, "TOTAL", 0, 14, DataGridViewContentAlignment.MiddleRight)
+            AddColumn(ColBalance, "BALANCE", 0, 15, DataGridViewContentAlignment.MiddleRight)
             AddColumn(ColStatus, "STATUS", 150, 0, DataGridViewContentAlignment.MiddleLeft)
         End Sub
 
@@ -186,8 +186,8 @@ Namespace Controls
 
         ' ---------------------------------------------------------------- input
 
-        Protected Overrides Sub OnCellDoubleClick(e As DataGridViewCellEventArgs)
-            MyBase.OnCellDoubleClick(e)
+        Protected Overrides Sub OnCellClick(e As DataGridViewCellEventArgs)
+            MyBase.OnCellClick(e)
             If e.RowIndex >= 0 Then Activate(e.RowIndex)
         End Sub
 

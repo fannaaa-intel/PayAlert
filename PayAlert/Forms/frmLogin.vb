@@ -77,10 +77,16 @@ Namespace Forms
             End If
         End Sub
 
-        ''' <summary>First start only: creates the demo accounts and payments when the users table is empty.</summary>
+        ''' <summary>
+        ''' Adds the columns and tables of the latest revision if the database is older, then (first start only) creates
+        ''' the demo accounts and payments when the users table is empty.
+        ''' </summary>
         Private Async Function PrepareDatabaseAsync() As Task
             Try
-                Await Task.Run(Sub() DemoDataSeeder.SeedIfEmpty())
+                Await Task.Run(Sub()
+                                   SchemaUpgrade.Apply()
+                                   DemoDataSeeder.SeedIfEmpty()
+                               End Sub)
             Catch ex As InvalidOperationException
                 Debug.WriteLine("[frmLogin] " & ex.ToString())
                 PADialog.Error(Me, "The database isn't ready", ex.Message)
