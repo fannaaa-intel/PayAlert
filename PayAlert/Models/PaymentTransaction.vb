@@ -34,6 +34,11 @@ Namespace Models
         Public Property PayerName As String = ""
         ''' <summary>The proof photo (payment_proofs), if one was attached.</summary>
         Public Property ProofId As Integer?
+        ''' <summary>
+        ''' True when this record is part of an advance: money paid on an earlier payment of a repeating chain that was
+        ''' more than its balance, carried over to this later one.
+        ''' </summary>
+        Public Property IsAdvance As Boolean
         Public Property CreatedAt As DateTime
 
         Public ReadOnly Property HasProof As Boolean

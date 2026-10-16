@@ -55,6 +55,8 @@ Namespace Dialogs
         Private ReadOnly _otherCaption As New Label()
         Private _otherTouched As Boolean
         Private _canSubmit As Boolean
+        ''' <summary>The balance, plus periods ahead when the payment repeats (advance payment).</summary>
+        Private _maxAmount As Decimal
 
         Public Event CanSubmitChanged As EventHandler Implements IDialogBody.CanSubmitChanged
 
@@ -69,14 +71,22 @@ Namespace Dialogs
             Dim body As New dlgRecordPayment(payment)
             Dim title = If(payment.IsReceivable, "Record Collection", "Record Payment")
             Dim message = """" & payment.Name & """  ·  " & Format.Money(payment.Balance) & " left of " & Format.Money(payment.TotalAmount)
+            ' Say up front that a repeating payment can be paid ahead: entering more than the balance is the way to do it.
+            If payment.IsRecurring Then message &= ". Repeats every " & PeriodWord(payment) & ", so you can also pay ahead."
             Dim choice = PADialog.ShowForm(owner, Tone.Brand, IconKind.Payments, title, message, body,
                                            If(payment.IsReceivable, "Save Collection", "Save Payment"))
             Return If(choice = DialogChoice.Primary, body.Result, Nothing)
         End Function
 
+        ''' <summary>"month" or "week".</summary>
+        Private Shared Function PeriodWord(payment As PaymentSummary) As String
+            Return If(payment.Recurrence = Payment.RecurrenceWeekly, "week", "month")
+        End Function
+
         Private Sub New(payment As PaymentSummary)
             _payment = payment
             _balance = payment.Balance
+            _maxAmount = TransactionService.MaxAmountFor(payment)
             BackColor = Theme.Surface
             Font = Theme.FontBody
 
@@ -212,13 +222,21 @@ Namespace Dialogs
             Dim amount = _amount.Value
             If Not amount.HasValue OrElse amount.Value <= 0D Then
                 amountError = "Enter an amount more than ₱0.00."
-            ElseIf amount.Value > _balance Then
-                amountError = "Can't be more than the " & Format.Money(_balance) & " balance."
+            ElseIf amount.Value > _maxAmount Then
+                amountError = If(_payment.IsRecurring,
+                                 "Up to " & Format.Money(_maxAmount) & " (" & TransactionService.MaxAdvancePeriods & " " & PeriodWord(_payment) & "s ahead).",
+                                 "Can't be more than the " & Format.Money(_balance) & " balance.")
             End If
             If amountError IsNot Nothing Then
                 ShowNote(_amountNote, amountError, True)
+            ElseIf amount.Value > _balance Then
+                ' Advance payment: the rest goes to the next ones of the series.
+                Dim periods = TransactionService.SplitAdvance(amount.Value, _balance, _payment.TotalAmount).Count - 1
+                ShowNote(_amountNote, "+ " & Format.Money(amount.Value - _balance) & " ahead (" & periods & " " &
+                                      PeriodWord(_payment) & If(periods = 1, "", "s") & ").", False)
+                _amountNote.ForeColor = Theme.BrandDark
             ElseIf amount.Value = _balance Then
-                ShowNote(_amountNote, "This " & paidWord & " it in full.", False)
+                ShowNote(_amountNote, If(_payment.IsRecurring, "Pays it in full. Enter more to pay ahead.", "This " & paidWord & " it in full."), False)
             Else
                 ShowNote(_amountNote, Format.Money(_balance - amount.Value) & " will be left.", False)
             End If
@@ -324,7 +342,14 @@ Namespace Dialogs
             If outcome.Status = RecordStatus.MoreThanBalance Then
                 ' Someone recorded part of it elsewhere since this window opened: keep the window open with the new limit.
                 _balance = outcome.BalanceBefore
+                _maxAmount = outcome.MaxAmount
                 CheckForm()
+                Return False
+            End If
+            If outcome.Status = RecordStatus.AdvanceBlocked Then
+                PADialog.Error(Me, "Can't pay ahead",
+                               "A later payment in this series was deleted, so the extra can't go to it. Nothing was saved. " &
+                               "Enter up to " & Format.Money(_balance) & " to pay this one.")
                 Return False
             End If
             Result = outcome

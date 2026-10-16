@@ -34,6 +34,11 @@ ALTER TABLE payment_transactions
     ADD COLUMN IF NOT EXISTS payer_name   VARCHAR(100) NULL AFTER reference_no,
     ADD COLUMN IF NOT EXISTS proof_id     INT          NULL AFTER payer_name;
 
+-- Advance payment: 1 = money paid ahead on an earlier payment of a repeating
+-- chain (more than its balance) and carried over to this later one.
+ALTER TABLE payment_transactions
+    ADD COLUMN IF NOT EXISTS is_advance TINYINT(1) NOT NULL DEFAULT 0 AFTER proof_id;
+
 ALTER TABLE payment_transactions
     ADD CONSTRAINT fk_txn_proof FOREIGN KEY IF NOT EXISTS (proof_id)
         REFERENCES payment_proofs (proof_id);

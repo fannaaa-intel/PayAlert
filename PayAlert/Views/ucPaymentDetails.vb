@@ -3,6 +3,7 @@ Option Explicit On
 
 Imports System.Collections.Generic
 Imports System.Drawing
+Imports System.Linq
 Imports System.Windows.Forms
 Imports PayAlert.Controls
 Imports PayAlert.Data
@@ -273,17 +274,27 @@ Namespace Views
 
             Dim p = outcome.Payment
             Dim txn = outcome.Transaction
+            Dim shares = outcome.AdvanceShares
             Dim lines As New List(Of String) From {
                 "Payment: " & p.Name,
-                If(receivable, "Amount received: ", "Amount paid: ") & Format.Money(txn.Amount),
+                If(receivable, "Amount received: ", "Amount paid: ") & Format.Money(outcome.TotalRecorded),
                 If(receivable, "Date received: ", "Date paid: ") & Format.ShortDate(txn.PaidOn),
-                "Method: " & If(txn.Method.Length = 0, "—", txn.Method),
-                If(txn.ReferenceNo.Length = 0, Nothing, "Reference no.: " & txn.ReferenceNo),
+                "Method: " & If(txn.Method.Length = 0, "—", txn.Method) & If(txn.ReferenceNo.Length = 0, "", "  ·  Ref. " & txn.ReferenceNo),
                 If(txn.PayerName.Length = 0, Nothing, If(receivable, "Received from: ", "Paid by: ") & txn.PayerName),
-                If(txn.HasProof, "Proof: Picture attached", Nothing),
-                If(p.IsPaid, "Status: " & If(receivable, "Fully collected", "Paid in full"), "Balance left: " & Format.Money(p.Balance))}
-            Dim nextPayment = outcome.NextPayment
-            If nextPayment IsNot Nothing Then lines.Add("Next one due: " & Format.ShortDate(nextPayment.DueDate))
+                If(txn.HasProof, "Proof: Picture attached", Nothing)}
+            If shares.Count > 0 Then
+                ' Advance payment: say where the money went, then what is due next.
+                lines.Add("For this one: " & Format.Money(txn.Amount))
+                lines.Add("Paid ahead: " & Format.Money(shares.Sum(Function(a) a.Amount)) & " (" & shares.Count & " more)")
+            Else
+                lines.Add(If(p.IsPaid, "Status: " & If(receivable, "Fully collected", "Paid in full"), "Balance left: " & Format.Money(p.Balance)))
+            End If
+            ' The next payment of a repeating series that still needs money.
+            Dim nextDue = If(outcome.NextDue IsNot Nothing AndAlso outcome.NextDue.PaymentId <> p.PaymentId, outcome.NextDue, Nothing)
+            If nextDue IsNot Nothing Then
+                lines.Add("Next to pay: " & Format.Money(nextDue.Balance) & " on " & Format.ShortDate(nextDue.DueDate))
+            End If
+            Dim nextId = If(nextDue IsNot Nothing, nextDue.PaymentId, If(outcome.NextPayment Is Nothing, 0, outcome.NextPayment.PaymentId))
 
             ' Show the new balance first, so the ring moves while the receipt is up.
             _payment = p
@@ -296,8 +307,8 @@ Namespace Views
 
             Dim nav = Navigator
             Dim choice = PADialog.Success(Me, If(receivable, "Collection recorded", "Payment recorded"), lines,
-                                          "Done", If(nextPayment Is Nothing, Nothing, "View Next Payment"))
-            If choice = DialogChoice.Secondary AndAlso nextPayment IsNot Nothing Then nav.Push(New ucPaymentDetails(nextPayment.PaymentId))
+                                          "Done", If(nextId = 0, Nothing, "View Next Payment"))
+            If choice = DialogChoice.Secondary AndAlso nextId <> 0 Then nav.Push(New ucPaymentDetails(nextId))
         End Sub
 
         Private Sub DeleteClicked(sender As Object, e As EventArgs)

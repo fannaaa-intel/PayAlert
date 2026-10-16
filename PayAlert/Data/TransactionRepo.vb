@@ -15,7 +15,7 @@ Namespace Data
     Public NotInheritable Class TransactionRepo
 
         Private Const HistoryColumns As String =
-            "SELECT t.txn_id, t.payment_id, t.amount, t.paid_on, t.method, t.reference_no, t.payer_name, t.proof_id, t.note, t.created_at, " &
+            "SELECT t.txn_id, t.payment_id, t.amount, t.paid_on, t.method, t.reference_no, t.payer_name, t.proof_id, t.is_advance, t.note, t.created_at, " &
             "p.name AS payment_name, p.direction, p.is_deleted " &
             "FROM payment_transactions t JOIN payments p ON p.payment_id = t.payment_id "
 
@@ -65,11 +65,11 @@ Namespace Data
             Return Convert.ToDecimal(total) - Convert.ToDecimal(paid)
         End Function
 
-        ''' <summary>Inserts a transaction and returns its new id. The caller has already checked the amount against the balance.</summary>
+        ''' <summary>Inserts a transaction and returns its new id. The caller (TransactionService) has already checked the amount.</summary>
         Public Shared Function Add(conn As MySqlConnection, tx As MySqlTransaction, txn As PaymentTransaction) As Integer
             Return Db.Insert(conn, tx,
-                "INSERT INTO payment_transactions (payment_id, amount, paid_on, method, reference_no, payer_name, proof_id, note) " &
-                "VALUES (@payment, @amount, @paidOn, @method, @reference, @payer, @proof, @note)",
+                "INSERT INTO payment_transactions (payment_id, amount, paid_on, method, reference_no, payer_name, proof_id, is_advance, note) " &
+                "VALUES (@payment, @amount, @paidOn, @method, @reference, @payer, @proof, @advance, @note)",
                 Db.P("@payment", txn.PaymentId),
                 Db.P("@amount", txn.Amount),
                 Db.P("@paidOn", txn.PaidOn.Date),
@@ -77,6 +77,7 @@ Namespace Data
                 Db.P("@reference", Blank(txn.ReferenceNo)),
                 Db.P("@payer", Blank(txn.PayerName)),
                 Db.P("@proof", If(txn.ProofId.HasValue, CObj(txn.ProofId.Value), Nothing)),
+                Db.P("@advance", If(txn.IsAdvance, 1, 0)),
                 Db.P("@note", Blank(txn.Note)))
         End Function
 
@@ -116,6 +117,7 @@ Namespace Data
                     .ReferenceNo = If(row.IsNull("reference_no"), "", CStr(row("reference_no"))),
                     .PayerName = If(row.IsNull("payer_name"), "", CStr(row("payer_name"))),
                     .ProofId = If(row.IsNull("proof_id"), CType(Nothing, Integer?), Convert.ToInt32(row("proof_id"))),
+                    .IsAdvance = Convert.ToInt32(row("is_advance")) <> 0,
                     .CreatedAt = If(row.IsNull("created_at"), DateTime.MinValue, Convert.ToDateTime(row("created_at"))),
                     .PaymentName = CStr(row("payment_name")),
                     .Direction = CStr(row("direction")),

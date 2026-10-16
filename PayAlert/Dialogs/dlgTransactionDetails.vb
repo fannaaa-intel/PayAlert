@@ -63,6 +63,7 @@ Namespace Dialogs
                 Row("Reference no.", Dash(txn.ReferenceNo)),
                 Row(If(receivable, "Received from", "Paid by"), Dash(txn.PayerName)),
                 Row("Note", Dash(txn.Note))}
+            If txn.IsAdvance Then rows.Insert(2, Row("Type", "Advance"))
             Dim y = 0
             For Each pair In rows
                 AddRow(pair.Key, pair.Value, y, leftW)

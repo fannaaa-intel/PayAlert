@@ -13,7 +13,8 @@ Namespace Controls
     ''' <summary>
     ''' Recorded payments and collections. Full mode (ucHistory): Date · Payment · Direction · Amount · Method / Reference · Note.
     ''' Compact mode (Payment Details): Date · Amount · Method / Reference · Note. The reference number shows under the
-    ''' method, and a picture mark before the note means a proof is attached. Styled and scrolled like PaymentGrid:
+    ''' method, a picture mark before the note means a proof is attached, and an "Advance" pill marks money paid ahead
+    ''' from an earlier payment of a repeating series. Styled and scrolled like PaymentGrid:
     ''' custom-drawn cells, horizontal rules only, no visible scrollbar (wheel and keys scroll, the bottom fades when more is below).
     ''' Click a header to sort; one click on a row or Enter raises TransactionActivated (the record's details).
     ''' </summary>
@@ -26,6 +27,8 @@ Namespace Controls
         Private Const ColAmount As String = "amount"
         Private Const ColMethod As String = "method"
         Private Const ColNote As String = "note"
+
+        Private Const AdvanceLabel As String = "Advance"
 
         Private _compact As Boolean
         Private _rows As New List(Of PaymentTransaction)
@@ -371,7 +374,15 @@ Namespace Controls
                         Dim textX = r.X + CInt(iconSize + 8 * S)
                         noteRect = New Rectangle(textX, r.Y, r.Right - textX, r.Height)
                     End If
-                    TextRenderer.DrawText(g, If(t.Note.Length = 0, "—", t.Note), Theme.FontBody, noteRect, Theme.TextMuted, flags)
+                    If t.IsAdvance Then
+                        ' "Advance" pill (brand colors, not a status): paid ahead from an earlier payment of the series.
+                        RowPainter.PaintPill(g, noteRect, AdvanceLabel, Theme.BrandDark, Theme.BrandSoft, S)
+                        Dim pillRight = noteRect.X + CInt(RowPainter.StatusPillWidth(g, AdvanceLabel, S) + 8 * S)
+                        noteRect = New Rectangle(pillRight, r.Y, Math.Max(0, r.Right - pillRight), r.Height)
+                    End If
+                    If noteRect.Width > 0 Then
+                        TextRenderer.DrawText(g, If(t.Note.Length = 0, If(t.IsAdvance, "", "—"), t.Note), Theme.FontBody, noteRect, Theme.TextMuted, flags)
+                    End If
             End Select
         End Sub
 

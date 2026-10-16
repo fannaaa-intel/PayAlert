@@ -43,6 +43,8 @@ Namespace Data
                              .Ddl = "ALTER TABLE payment_transactions ADD COLUMN payer_name VARCHAR(100) NULL AFTER reference_no"},
             New Change With {.Kind = "column", .Table = "payment_transactions", .Name = "proof_id",
                              .Ddl = "ALTER TABLE payment_transactions ADD COLUMN proof_id INT NULL AFTER payer_name"},
+            New Change With {.Kind = "column", .Table = "payment_transactions", .Name = "is_advance",
+                             .Ddl = "ALTER TABLE payment_transactions ADD COLUMN is_advance TINYINT(1) NOT NULL DEFAULT 0 AFTER proof_id"},
             New Change With {.Kind = "constraint", .Table = "payment_transactions", .Name = "fk_txn_proof",
                              .Ddl = "ALTER TABLE payment_transactions ADD CONSTRAINT fk_txn_proof FOREIGN KEY (proof_id) REFERENCES payment_proofs (proof_id)"}}
 
